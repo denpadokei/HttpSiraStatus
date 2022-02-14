@@ -44,17 +44,17 @@ namespace HttpSiraStatus.Models
         #region // プライベートメソッド
         private void OnMultiplayerLevelFinished(MultiplayerLevelCompletionResults obj)
         {
-            switch (obj.levelEndState) {
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.Cleared:
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.GivenUp:
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.WasInactive:
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.HostEndedLevel:
+            switch (obj.playerLevelEndReason) {
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.Cleared:
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.GivenUp:
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.WasInactive:
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.HostEndedLevel:
                     this.OnLevelFinished();
                     break;
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.Failed:
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.StartupFailed:
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.ConnectedAfterLevelEnded:
-                case MultiplayerLevelCompletionResults.MultiplayerLevelEndState.Quit:
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.Failed:
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.Quit:
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.StartupFailed:
+                case MultiplayerLevelCompletionResults.MultiplayerPlayerLevelEndReason.ConnectedAfterLevelEnded:
                     this.OnLevelFailed();
                     break;
                 default:
