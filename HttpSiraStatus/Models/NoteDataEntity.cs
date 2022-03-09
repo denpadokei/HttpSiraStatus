@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Zenject;
 
 namespace HttpSiraStatus.Models
@@ -17,10 +18,22 @@ namespace HttpSiraStatus.Models
         public NoteLineLayer beforeJumpNoteLineLayer { get; private set; }
         public int flipLineIndex { get; private set; }
         public float flipYSide { get; private set; }
-        public float duration { get; private set; }
-        public bool skipBeforeCutScoring { get; private set; }
-        public bool skipAfterCutScoring { get; private set; }
-        public BeatmapObjectType beatmapObjectType { get; private set; }
+        public int executionOrder
+        {
+            get;
+            private set;
+        }
+        public NoteData.GameplayType gameplayType
+        {
+            get;
+            private set;
+        }
+
+        public NoteData.ScoringType scoringType
+        {
+            get;
+            private set;
+        }
         public float time { get; private set; }
         public int lineIndex { get; private set; }
         public NoteDataEntity()
@@ -33,8 +46,10 @@ namespace HttpSiraStatus.Models
 
         public void SetData(NoteData note, bool noArrow)
         {
-            this.beatmapObjectType = note.beatmapObjectType;
+            this.gameplayType = note.gameplayType;
+            this.scoringType = note.scoringType;
             this.time = note.time;
+            this.executionOrder = note.executionOrder;
             this.lineIndex = note.lineIndex;
             this.colorType = note.colorType;
             this.cutDirection = noArrow ? NoteCutDirection.Any : note.cutDirection;
@@ -44,9 +59,6 @@ namespace HttpSiraStatus.Models
             this.beforeJumpNoteLineLayer = note.beforeJumpNoteLineLayer;
             this.flipLineIndex = note.flipLineIndex;
             this.flipYSide = note.flipYSide;
-            this.duration = note.duration;
-            this.skipBeforeCutScoring = note.skipBeforeCutScoring;
-            this.skipAfterCutScoring = note.skipAfterCutScoring;
         }
 
         public class Pool : MemoryPool<NoteData, bool, NoteDataEntity>
