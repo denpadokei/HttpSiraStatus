@@ -23,11 +23,12 @@ namespace HttpSiraStatus
 
         public IGameStatus GameStatus => this._gameStatus;
         public JSONObject StatusJSON { get; } = new JSONObject();
-        public JSONObject NoteCutJSON { get; } = new JSONObject();
+        public ConcurrentQueue<JSONObject> NoteCutJSON { get; } = new ConcurrentQueue<JSONObject>();
         public JSONObject BeatmapEventJSON { get; } = new JSONObject();
         public JSONObject OtherJSON { get; } = new JSONObject();
         public ObjectMemoryPool<JSONObject> JsonPool { get; }
         public ConcurrentQueue<JSONObject> JsonQueue { get; } = new ConcurrentQueue<JSONObject>();
+        public ConcurrentQueue<CutScoreInfoEntity> CutScoreInfoQueue { get; } = new ConcurrentQueue<CutScoreInfoEntity>();
 
 
         public event SendEventHandler SendEvent;
@@ -93,8 +94,8 @@ namespace HttpSiraStatus
                 }
                 eventJSON["status"] = status;
             }
-            if ((changedProps & ChangedProperty.NoteCut) == ChangedProperty.NoteCut) {
-                eventJSON["noteCut"] = this.NoteCutJSON;
+            if ((changedProps & ChangedProperty.NoteCut) == ChangedProperty.NoteCut && this.NoteCutJSON.TryDequeue(out var notecut)) {
+                eventJSON["noteCut"] = notecut;
             }
             if ((changedProps & ChangedProperty.BeatmapEvent) == ChangedProperty.BeatmapEvent) {
                 eventJSON["beatmapEvent"] = this.BeatmapEventJSON;
@@ -255,56 +256,63 @@ namespace HttpSiraStatus
 
         private void UpdateNoteCutJSON()
         {
-            this.NoteCutJSON["noteID"] = this._gameStatus.noteID;
-            this.NoteCutJSON["noteType"] = this.StringOrNull(this._gameStatus.noteType);
-            this.NoteCutJSON["noteCutDirection"] = this.StringOrNull(this._gameStatus.noteCutDirection);
-            this.NoteCutJSON["sliderHeadCutDirection"] = this.StringOrNull(this._gameStatus.sliderHeadCutDirection);
-            this.NoteCutJSON["sliderTailCutDirection"] = this.StringOrNull(this._gameStatus.sliderTailCutDirection);
-            this.NoteCutJSON["noteLine"] = this._gameStatus.noteLine;
-            this.NoteCutJSON["noteLayer"] = this._gameStatus.noteLayer;
-            this.NoteCutJSON["sliderHeadLine"] = this._gameStatus.sliderHeadLine;
-            this.NoteCutJSON["sliderHeadLayer"] = this._gameStatus.sliderHeadLayer;
-            this.NoteCutJSON["sliderTailLine"] = this._gameStatus.sliderTailLine;
-            this.NoteCutJSON["sliderTailLayer"] = this._gameStatus.sliderTailLayer;
-            this.NoteCutJSON["speedOK"] = this._gameStatus.speedOK;
-            this.NoteCutJSON["directionOK"] = this._gameStatus.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(this._gameStatus.directionOK);
-            this.NoteCutJSON["saberTypeOK"] = this._gameStatus.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(this._gameStatus.saberTypeOK);
-            this.NoteCutJSON["wasCutTooSoon"] = this._gameStatus.wasCutTooSoon;
-            this.NoteCutJSON["initialScore"] = this._gameStatus.initialScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this._gameStatus.initialScore);
-            this.NoteCutJSON["finalScore"] = this._gameStatus.finalScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this._gameStatus.finalScore);
-            this.NoteCutJSON["cutDistanceScore"] = this._gameStatus.cutDistanceScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this._gameStatus.cutDistanceScore);
-            this.NoteCutJSON["swingRating"] = this._gameStatus.swingRating;
-            this.NoteCutJSON["beforSwingRating"] = this._gameStatus.beforSwingRating;
-            this.NoteCutJSON["afterSwingRating"] = this._gameStatus.afterSwingRating;
-            this.NoteCutJSON["multiplier"] = this._gameStatus.cutMultiplier;
-            this.NoteCutJSON["saberSpeed"] = this._gameStatus.saberSpeed;
-            if (!this.NoteCutJSON["saberDir"].IsArray) {
-                this.NoteCutJSON["saberDir"] = new JSONArray();
+            if (!this.CutScoreInfoQueue.TryDequeue(out var cutScoreInfo)) {
+                return;
             }
 
-            this.NoteCutJSON["saberDir"][0].AsFloat = this._gameStatus.saberDirX;
-            this.NoteCutJSON["saberDir"][1].AsFloat = this._gameStatus.saberDirY;
-            this.NoteCutJSON["saberDir"][2].AsFloat = this._gameStatus.saberDirZ;
-            this.NoteCutJSON["saberType"] = this.StringOrNull(this._gameStatus.saberType);
-            this.NoteCutJSON["timeDeviation"] = this._gameStatus.timeDeviation;
-            this.NoteCutJSON["cutDirectionDeviation"] = this._gameStatus.cutDirectionDeviation;
-            if (!this.NoteCutJSON["cutPoint"].IsArray) {
-                this.NoteCutJSON["cutPoint"] = new JSONArray();
+            var notecut = new JSONObject();
+
+            notecut["noteID"] = cutScoreInfo.noteID;
+            notecut["noteType"] = this.StringOrNull(cutScoreInfo.noteType);
+            notecut["noteCutDirection"] = this.StringOrNull(cutScoreInfo.noteCutDirection);
+            notecut["sliderHeadCutDirection"] = this.StringOrNull(cutScoreInfo.sliderHeadCutDirection);
+            notecut["sliderTailCutDirection"] = this.StringOrNull(cutScoreInfo.sliderTailCutDirection);
+            notecut["noteLine"] = cutScoreInfo.noteLine;
+            notecut["noteLayer"] = cutScoreInfo.noteLayer;
+            notecut["sliderHeadLine"] = cutScoreInfo.sliderHeadLine;
+            notecut["sliderHeadLayer"] = cutScoreInfo.sliderHeadLayer;
+            notecut["sliderTailLine"] = cutScoreInfo.sliderTailLine;
+            notecut["sliderTailLayer"] = cutScoreInfo.sliderTailLayer;
+            notecut["speedOK"] = cutScoreInfo.speedOK;
+            notecut["directionOK"] = cutScoreInfo.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(cutScoreInfo.directionOK);
+            notecut["saberTypeOK"] = cutScoreInfo.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(cutScoreInfo.saberTypeOK);
+            notecut["wasCutTooSoon"] = cutScoreInfo.wasCutTooSoon;
+            notecut["initialScore"] = cutScoreInfo.initialScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(cutScoreInfo.initialScore);
+            notecut["finalScore"] = cutScoreInfo.finalScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(cutScoreInfo.finalScore);
+            notecut["cutDistanceScore"] = cutScoreInfo.cutDistanceScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(cutScoreInfo.cutDistanceScore);
+            notecut["swingRating"] = cutScoreInfo.swingRating;
+            notecut["beforSwingRating"] = cutScoreInfo.beforSwingRating;
+            notecut["afterSwingRating"] = cutScoreInfo.afterSwingRating;
+            notecut["multiplier"] = cutScoreInfo.cutMultiplier;
+            notecut["saberSpeed"] = cutScoreInfo.saberSpeed;
+            if (!notecut["saberDir"].IsArray) {
+                notecut["saberDir"] = new JSONArray();
             }
 
-            this.NoteCutJSON["cutPoint"][0].AsFloat = this._gameStatus.cutPointX;
-            this.NoteCutJSON["cutPoint"][1].AsFloat = this._gameStatus.cutPointY;
-            this.NoteCutJSON["cutPoint"][2].AsFloat = this._gameStatus.cutPointZ;
-            if (!this.NoteCutJSON["cutNormal"].IsArray) {
-                this.NoteCutJSON["cutNormal"] = new JSONArray();
+            notecut["saberDir"][0].AsFloat = cutScoreInfo.saberDir.x;
+            notecut["saberDir"][1].AsFloat = cutScoreInfo.saberDir.y;
+            notecut["saberDir"][2].AsFloat = cutScoreInfo.saberDir.z;
+            notecut["saberType"] = this.StringOrNull(cutScoreInfo.saberType);
+            notecut["timeDeviation"] = cutScoreInfo.timeDeviation;
+            notecut["cutDirectionDeviation"] = cutScoreInfo.cutDirectionDeviation;
+            if (!notecut["cutPoint"].IsArray) {
+                notecut["cutPoint"] = new JSONArray();
             }
 
-            this.NoteCutJSON["cutNormal"][0].AsFloat = this._gameStatus.cutNormalX;
-            this.NoteCutJSON["cutNormal"][1].AsFloat = this._gameStatus.cutNormalY;
-            this.NoteCutJSON["cutNormal"][2].AsFloat = this._gameStatus.cutNormalZ;
-            this.NoteCutJSON["cutDistanceToCenter"] = this._gameStatus.cutDistanceToCenter;
-            this.NoteCutJSON["timeToNextBasicNote"] = this._gameStatus.timeToNextBasicNote;
-            this.NoteCutJSON["gameplayType"] = this.StringOrNull(this._gameStatus.gameplayType);
+            notecut["cutPoint"][0].AsFloat = cutScoreInfo.cutPoint.x;
+            notecut["cutPoint"][1].AsFloat = cutScoreInfo.cutPoint.y;
+            notecut["cutPoint"][2].AsFloat = cutScoreInfo.cutPoint.z;
+            if (!notecut["cutNormal"].IsArray) {
+                notecut["cutNormal"] = new JSONArray();
+            }
+
+            notecut["cutNormal"][0].AsFloat = cutScoreInfo.cutNormal.x;
+            notecut["cutNormal"][1].AsFloat = cutScoreInfo.cutNormal.y;
+            notecut["cutNormal"][2].AsFloat = cutScoreInfo.cutNormal.z;
+            notecut["cutDistanceToCenter"] = cutScoreInfo.cutDistanceToCenter;
+            notecut["timeToNextBasicNote"] = cutScoreInfo.timeToNextBasicNote;
+            notecut["gameplayType"] = this.StringOrNull(cutScoreInfo.gameplayType);
+            this.NoteCutJSON.Enqueue(notecut);
         }
 
         private void UpdateModJSON()

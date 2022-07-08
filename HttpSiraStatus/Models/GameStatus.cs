@@ -65,46 +65,6 @@ namespace HttpSiraStatus
         public float relativeScore { get; internal set; } = 1;
         public int currentSongTime { get; internal set; } = 0;
 
-        // Note cut
-        public int noteID { get; internal set; } = -1;
-        public string noteType { get; internal set; } = null;
-        public string noteCutDirection { get; internal set; } = null;
-        public string sliderHeadCutDirection { get; internal set; } = null;
-        public string sliderTailCutDirection { get; internal set; } = null;
-        public int noteLine { get; internal set; } = 0;
-        public int noteLayer { get; internal set; } = 0;
-        public int sliderHeadLine { get; internal set; } = 0;
-        public int sliderHeadLayer { get; internal set; } = 0;
-        public int sliderTailLine { get; internal set; } = 0;
-        public int sliderTailLayer { get; internal set; } = 0;
-        public bool speedOK { get; internal set; } = false;
-        public bool directionOK { get; internal set; } = false;
-        public bool saberTypeOK { get; internal set; } = false;
-        public bool wasCutTooSoon { get; internal set; } = false;
-        public int initialScore { get; internal set; } = -1;
-        public int finalScore { get; internal set; } = -1;
-        public int cutDistanceScore { get; internal set; } = -1;
-        public int cutMultiplier { get; internal set; } = 0;
-        public float saberSpeed { get; internal set; } = 0;
-        public float saberDirX { get; internal set; } = 0;
-        public float saberDirY { get; internal set; } = 0;
-        public float saberDirZ { get; internal set; } = 0;
-        public string saberType { get; internal set; } = null;
-        public float swingRating { get; internal set; } = 0;
-        public float beforSwingRating { get; internal set; } = 0;
-        public float afterSwingRating { get; internal set; } = 0;
-        public float timeDeviation { get; internal set; } = 0;
-        public float cutDirectionDeviation { get; internal set; } = 0;
-        public float cutPointX { get; internal set; } = 0;
-        public float cutPointY { get; internal set; } = 0;
-        public float cutPointZ { get; internal set; } = 0;
-        public float cutNormalX { get; internal set; } = 0;
-        public float cutNormalY { get; internal set; } = 0;
-        public float cutNormalZ { get; internal set; } = 0;
-        public float cutDistanceToCenter { get; internal set; } = 0;
-        public float timeToNextBasicNote { get; internal set; } = 0;
-        public string gameplayType { get; internal set; } = "";
-
         // Mods
         public float modifierMultiplier { get; internal set; } = 1f;
         public string modObstacles { get; internal set; } = "All";
@@ -195,47 +155,6 @@ namespace HttpSiraStatus
             this.softFailed = false;
             this.relativeScore = 1;
             this.currentSongTime = 0;
-        }
-
-        public void ResetNoteCut()
-        {
-            this.noteID = -1;
-            this.noteType = null;
-            this.noteCutDirection = null;
-            this.sliderHeadCutDirection = null;
-            this.sliderTailCutDirection = null;
-            this.noteLine = 0;
-            this.noteLayer = 0;
-            this.sliderHeadLine = 0;
-            this.sliderHeadLayer = 0;
-            this.sliderTailLine = 0;
-            this.sliderTailLayer = 0;
-            this.speedOK = false;
-            this.directionOK = false;
-            this.saberTypeOK = false;
-            this.wasCutTooSoon = false;
-            this.initialScore = -1;
-            this.finalScore = -1;
-            this.cutDistanceScore = -1;
-            this.cutMultiplier = 0;
-            this.saberSpeed = 0;
-            this.saberDirX = 0;
-            this.saberDirY = 0;
-            this.saberDirZ = 0;
-            this.saberType = null;
-            this.swingRating = 0;
-            this.beforSwingRating = 0;
-            this.afterSwingRating = 0;
-            this.timeDeviation = 0;
-            this.cutDirectionDeviation = 0;
-            this.cutPointX = 0;
-            this.cutPointY = 0;
-            this.cutPointZ = 0;
-            this.cutNormalX = 0;
-            this.cutNormalY = 0;
-            this.cutNormalZ = 0;
-            this.cutDistanceToCenter = 0;
-            this.gameplayType = "";
         }
     }
 }
