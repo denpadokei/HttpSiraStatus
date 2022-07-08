@@ -6,11 +6,9 @@ namespace HttpSiraStatus.Interfaces
     public interface IGameStatus
     {
         bool advancedHUD { get; }
-        float afterSwingRating { get; }
         bool autoRestart { get; }
         int batteryEnergy { get; }
         int batteryLives { get; }
-        float beforSwingRating { get; }
         int bombsCount { get; }
         string characteristic { get; }
         Color? colorEnvironment0 { get; }
@@ -23,28 +21,14 @@ namespace HttpSiraStatus.Interfaces
         int combo { get; }
         int currentMaxScore { get; }
         int currentSongTime { get; }
-        float cutDirectionDeviation { get; }
-        int cutDistanceScore { get; }
-        float cutDistanceToCenter { get; }
-        int cutMultiplier { get; }
-        float cutNormalX { get; }
-        float cutNormalY { get; }
-        float cutNormalZ { get; }
-        float cutPointX { get; }
-        float cutPointY { get; }
-        float cutPointZ { get; }
         string difficulty { get; }
         string difficultyEnum { get; }
-        bool directionOK { get; }
         float energy { get; }
         string environmentEffects { get; }
         string environmentName { get; }
-        int finalScore { get; }
-        string gameplayType { get; }
         bool hideNoteSpawningEffect { get; }
         int hitBombs { get; }
         int hitNotes { get; }
-        int initialScore { get; }
         int lastNoteScore { get; }
         bool leftHanded { get; }
         long length { get; }
@@ -75,14 +59,9 @@ namespace HttpSiraStatus.Interfaces
         int multiplier { get; }
         float multiplierProgress { get; }
         bool noHUD { get; }
-        string noteCutDirection { get; }
-        int noteID { get; }
         float noteJumpSpeed { get; }
         float noteJumpStartBeatOffset { get; }
-        int noteLayer { get; }
-        int noteLine { get; }
         int notesCount { get; }
-        string noteType { get; }
         int obstaclesCount { get; }
         bool partyMode { get; }
         int passedBombs { get; }
@@ -93,22 +72,10 @@ namespace HttpSiraStatus.Interfaces
         int rawScore { get; }
         bool reduceDebris { get; }
         float relativeScore { get; }
-        float saberDirX { get; }
-        float saberDirY { get; }
-        float saberDirZ { get; }
-        float saberSpeed { get; }
         float saberTrailIntensity { get; }
-        string saberType { get; }
-        bool saberTypeOK { get; }
         string scene { get; }
         int score { get; }
         float sfxVolume { get; }
-        string sliderHeadCutDirection { get; }
-        int sliderHeadLayer { get; }
-        int sliderHeadLine { get; }
-        string sliderTailCutDirection { get; }
-        int sliderTailLayer { get; }
-        int sliderTailLine { get; }
         bool softFailed { get; }
         string songAuthorName { get; }
         float songBPM { get; }
@@ -118,13 +85,8 @@ namespace HttpSiraStatus.Interfaces
         float songSpeedMultiplier { get; }
         string songSubName { get; }
         long songTimeOffset { get; }
-        bool speedOK { get; }
         long start { get; }
         bool staticLights { get; }
-        float swingRating { get; }
-        float timeDeviation { get; }
-        float timeToNextBasicNote { get; }
         string updateCause { get; }
-        bool wasCutTooSoon { get; }
     }
 }

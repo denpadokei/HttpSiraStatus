@@ -1,4 +1,5 @@
-﻿using HttpSiraStatus.Util;
+﻿using HttpSiraStatus.Models;
+using HttpSiraStatus.Util;
 using System;
 using System.Collections.Concurrent;
 
@@ -9,7 +10,8 @@ namespace HttpSiraStatus.Interfaces
         [Obsolete("このプロパティはいずれなくなります。DiContainerからInjectで取得してください。", true)]
         IGameStatus GameStatus { get; }
         JSONObject StatusJSON { get; }
-        JSONObject NoteCutJSON { get; }
+        ConcurrentQueue<JSONObject> NoteCutJSON { get; }
+        ConcurrentQueue<CutScoreInfoEntity> CutScoreInfoQueue { get; }
         ConcurrentQueue<IBeatmapEventInformation> BeatmapEventJSON { get; }
         JSONObject OtherJSON { get; }
         ConcurrentQueue<JSONObject> JsonQueue { get; }
