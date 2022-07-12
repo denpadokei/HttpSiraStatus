@@ -241,11 +241,7 @@ namespace HttpSiraStatus.Models
 
         private CutScoreInfoEntity SetNoteCutStatus(IBeatmapObjectEntity entity, in Vector3 saberDir = default, in Vector3 cutPoint = default, in Vector3 cutNormal = default, in NoteCutInfo noteCutInfo = default)
         {
-            var notecut = new CutScoreInfoEntity
-            {
-                // Backwards compatibility for <1.12.1
-                noteID = -1
-            };
+            var notecut = this._cutScoreInfoEntityPool.Spawn();
             // Check the near notes first for performance
             if (this._noteToIdMapping.TryGetValue(entity, out var noteID)) {
                 notecut.noteID = noteID;
@@ -387,6 +383,7 @@ namespace HttpSiraStatus.Models
         private MemoryPoolContainer<CustomGoodCutScoringElement> _customGoodCutScoringElementPool;
         private MemoryPoolContainer<CustomBadCutScoringElement> _badCutScoringElementPool;
         private MemoryPoolContainer<MissScoringElement> _missScoringElementPool;
+        private CutScoreInfoEntity.Pool _cutScoreInfoEntityPool;
         private NoteDataEntity.Pool _notePool;
         private SliderDataEntity.Pool _sliderPool;
         private GameplayCoreSceneSetupData _gameplayCoreSceneSetupData;
@@ -434,6 +431,7 @@ namespace HttpSiraStatus.Models
         /// <param name="missScoringElementPool"></param>
         /// <param name="noteDataEntityPool"></param>
         /// <param name="sliderDataEntityPool"></param>
+        /// <param name="cutScoreInfoEntityPool"></param>
         /// <param name="gameplayCoreSceneSetupData"></param>
         /// <param name="score"></param>
         /// <param name="comboController"></param>
@@ -455,6 +453,7 @@ namespace HttpSiraStatus.Models
             MissScoringElement.Pool missScoringElementPool,
             NoteDataEntity.Pool noteDataEntityPool,
             SliderDataEntity.Pool sliderDataEntityPool,
+            CutScoreInfoEntity.Pool cutScoreInfoEntityPool,
             GameplayCoreSceneSetupData gameplayCoreSceneSetupData,
             IScoreController score,
             IComboController comboController,
@@ -473,6 +472,7 @@ namespace HttpSiraStatus.Models
             this._customGoodCutScoringElementPool = new MemoryPoolContainer<CustomGoodCutScoringElement>(customCutBufferPool);
             this._badCutScoringElementPool = new MemoryPoolContainer<CustomBadCutScoringElement>(badCutScoringElementPool);
             this._missScoringElementPool = new MemoryPoolContainer<MissScoringElement>(missScoringElementPool);
+            this._cutScoreInfoEntityPool = cutScoreInfoEntityPool;
             this._notePool = noteDataEntityPool;
             this._sliderPool = sliderDataEntityPool;
             this._gameplayCoreSceneSetupData = gameplayCoreSceneSetupData;
