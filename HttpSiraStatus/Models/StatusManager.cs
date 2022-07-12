@@ -12,13 +12,14 @@ namespace HttpSiraStatus
     public class StatusManager : IStatusManager, IDisposable
     {
         [Inject]
-        internal StatusManager(GameStatus gameStatus)
+        internal StatusManager(GameStatus gameStatus, CutScoreInfoEntity.Pool cutScorePool)
         {
             this._gameStatus = gameStatus;
             this.JsonPool = new ObjectMemoryPool<JSONObject>(null, r => { r.Clear(); }, 20);
             this.UpdateAll();
             this._thread = new Thread(new ThreadStart(this.RaiseSendEvent));
             this._thread.Start();
+            this._cutScorePool = cutScorePool;
         }
 
         public IGameStatus GameStatus => this._gameStatus;
@@ -35,6 +36,7 @@ namespace HttpSiraStatus
         private readonly Thread _thread;
         private bool _disposedValue;
         private readonly GameStatus _gameStatus;
+        private readonly CutScoreInfoEntity.Pool _cutScorePool;
 
         public void EmitStatusUpdate(ChangedProperty changedProps, BeatSaberEvent e)
         {
@@ -312,6 +314,7 @@ namespace HttpSiraStatus
             notecut["cutDistanceToCenter"] = cutScoreInfo.cutDistanceToCenter;
             notecut["timeToNextBasicNote"] = cutScoreInfo.timeToNextBasicNote;
             notecut["gameplayType"] = this.StringOrNull(cutScoreInfo.gameplayType);
+            this._cutScorePool.Despawn(cutScoreInfo);
             this.NoteCutJSON.Enqueue(notecut);
         }
 

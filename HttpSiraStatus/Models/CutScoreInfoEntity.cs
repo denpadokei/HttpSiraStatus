@@ -1,8 +1,11 @@
-﻿using UnityEngine;
+﻿using HttpSiraStatus.Interfaces;
+using System.Collections.Generic;
+using UnityEngine;
+using Zenject;
 
 namespace HttpSiraStatus.Models
 {
-    public class CutScoreInfoEntity
+    public class CutScoreInfoEntity : ICutScoreInfoEntity
     {
         public int noteID { get; internal set; } = -1;
         public string noteType { get; internal set; } = null;
@@ -36,6 +39,7 @@ namespace HttpSiraStatus.Models
         public float cutDistanceToCenter { get; internal set; } = 0;
         public float timeToNextBasicNote { get; internal set; } = 0;
         public string gameplayType { get; internal set; } = "";
+
         public void ResetNoteCut()
         {
             this.noteID = -1;
@@ -69,6 +73,14 @@ namespace HttpSiraStatus.Models
             this.cutNormal = Vector3.zero;
             this.cutDistanceToCenter = 0;
             this.gameplayType = "";
+        }
+
+        public class Pool : MemoryPool<CutScoreInfoEntity>
+        {
+            protected override void OnDespawned(CutScoreInfoEntity item)
+            {
+                item.ResetNoteCut();
+            }
         }
     }
 }
