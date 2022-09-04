@@ -328,7 +328,7 @@ namespace HttpSiraStatus.Models
         private void OnMultiplierDidChange(int multiplier, float multiplierProgress)
         {
             this._gameStatus.multiplier = multiplier;
-            this._gameStatus.multiplierProgress = float.IsNaN(multiplierProgress) ? 0f : multiplierProgress;
+            this._gameStatus.multiplierProgress = multiplierProgress;
             this._statusManager.EmitStatusUpdate(ChangedProperty.Performance, BeatSaberEvent.ScoreChanged);
         }
 

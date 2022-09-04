@@ -259,7 +259,7 @@ namespace HttpSiraStatus
             performanceJSON["combo"].AsInt = this._gameStatus.combo;
             performanceJSON["maxCombo"].AsInt = this._gameStatus.maxCombo;
             performanceJSON["multiplier"].AsInt = this._gameStatus.multiplier;
-            performanceJSON["multiplierProgress"].AsFloat = this._gameStatus.multiplierProgress;
+            performanceJSON["multiplierProgress"].AsFloat = float.IsNaN(this._gameStatus.multiplierProgress) ? 0f : this._gameStatus.multiplierProgress;
             performanceJSON["batteryEnergy"] = this._gameStatus.modBatteryEnergy || this._gameStatus.modInstaFail ? new JSONNumber(this._gameStatus.batteryEnergy) : JSONNull.CreateOrGet();
             performanceJSON["energy"].AsFloat = this._gameStatus.energy;
             performanceJSON["softFailed"].AsBool = this._gameStatus.softFailed;
