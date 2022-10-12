@@ -184,6 +184,8 @@ namespace HttpSiraStatus.Models
                 var notecut = this.SetNoteCutStatus(element.NoteDataEntity, BeatSaberEvent.NoteCut, element.SaberDir, element.CutPoint, element.CutNormal, noteCutInfo);
                 notecut.cutDistanceScore = element.cutScoreBuffer.centerDistanceCutScore;
                 notecut.initialScore = element.cutScore;
+                notecut.beforSwingRating = cutScoreBuffer.beforeCutSwingRating;
+                notecut.afterSwingRating = cutScoreBuffer.afterCutSwingRating;
             }
             else if (obj is MissScoringElement && colorType != ColorType.None) {
                 this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteMissed);
@@ -205,6 +207,8 @@ namespace HttpSiraStatus.Models
                 notecut.cutDistanceScore = element.cutScoreBuffer.centerDistanceCutScore;
                 notecut.initialScore = element.InitialScore;
                 notecut.finalScore = element.cutScore;
+                notecut.beforSwingRating = cutScoreBuffer.beforeCutSwingRating;
+                notecut.afterSwingRating = cutScoreBuffer.afterCutSwingRating;
             }
             else if (obj is CustomBadCutScoringElement badElement && obj.noteData.colorType != ColorType.None) {
                 var notecut = this.SetNoteCutStatus(badElement.NoteDataEntity, BeatSaberEvent.NoteFullyCut, badElement.SaberDir, badElement.CutPoint, badElement.CutNormal, badElement.NoteCutInfo);
@@ -277,9 +281,6 @@ namespace HttpSiraStatus.Models
                 notecut.sliderTailLayer = (int)sliderDataEntity.tailLineLayer;
             }
             if (!EqualityComparer<NoteCutInfo>.Default.Equals(noteCutInfo, default)) {
-                var noteScoreDefinition = ScoreModel.GetNoteScoreDefinition(noteCutInfo.noteData.scoringType);
-                var rateBeforeCut = noteScoreDefinition.maxBeforeCutScore > 0 && noteScoreDefinition.minBeforeCutScore != noteScoreDefinition.maxBeforeCutScore;
-                var rateAfterCut = noteScoreDefinition.maxAfterCutScore > 0 && noteScoreDefinition.minAfterCutScore != noteScoreDefinition.maxAfterCutScore;
                 notecut.speedOK = noteCutInfo.speedOK;
                 notecut.directionOK = noteCutInfo.directionOK;
                 notecut.saberTypeOK = noteCutInfo.saberTypeOK;
@@ -288,8 +289,6 @@ namespace HttpSiraStatus.Models
                 notecut.saberDir = saberDir;
                 var rating = noteCutInfo.saberMovementData?.ComputeSwingRating();
                 notecut.swingRating = noteCutInfo.saberMovementData == null ? -1 : rating.Value;
-                notecut.afterSwingRating = rateAfterCut ? 0 : 1;
-                notecut.beforSwingRating = rateAfterCut ? rating.Value : 1;
                 notecut.saberType = noteCutInfo.saberType.ToString();
                 notecut.timeDeviation = noteCutInfo.timeDeviation;
                 notecut.cutDirectionDeviation = noteCutInfo.cutDirDeviation;
