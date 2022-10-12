@@ -30,7 +30,7 @@ namespace HttpSiraStatus.Models
         public Vector3 saberDir { get; internal set; } = Vector3.zero;
         public string saberType { get; internal set; } = null;
         public float swingRating { get; internal set; } = 0;
-        public float beforSwingRating { get; internal set; } = 0;
+        public float beforeSwingRating { get; internal set; } = 0;
         public float afterSwingRating { get; internal set; } = 0;
         public float timeDeviation { get; internal set; } = 0;
         public float cutDirectionDeviation { get; internal set; } = 0;
@@ -65,7 +65,7 @@ namespace HttpSiraStatus.Models
             this.saberDir = Vector3.zero;
             this.saberType = null;
             this.swingRating = 0;
-            this.beforSwingRating = 0;
+            this.beforeSwingRating = 0;
             this.afterSwingRating = 0;
             this.timeDeviation = 0;
             this.cutDirectionDeviation = 0;
@@ -98,7 +98,7 @@ namespace HttpSiraStatus.Models
             notecut["finalScore"] = this.finalScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this.finalScore);
             notecut["cutDistanceScore"] = this.cutDistanceScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this.cutDistanceScore);
             notecut["swingRating"] = this.swingRating;
-            notecut["beforSwingRating"] = this.beforSwingRating;
+            notecut["beforeSwingRating"] = this.beforeSwingRating;
             notecut["afterSwingRating"] = this.afterSwingRating;
             notecut["multiplier"] = this.cutMultiplier;
             notecut["saberSpeed"] = this.saberSpeed;

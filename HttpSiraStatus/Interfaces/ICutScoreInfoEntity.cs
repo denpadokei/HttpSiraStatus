@@ -6,7 +6,7 @@ namespace HttpSiraStatus.Interfaces
     public interface ICutScoreInfoEntity
     {
         float afterSwingRating { get; }
-        float beforSwingRating { get; }
+        float beforeSwingRating { get; }
         float cutDirectionDeviation { get; }
         int cutDistanceScore { get; }
         float cutDistanceToCenter { get; }
