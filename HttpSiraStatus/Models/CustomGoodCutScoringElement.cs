@@ -20,6 +20,13 @@ namespace HttpSiraStatus.Models
             base.Init(noteCutInfo);
             this.InitialScore = this.cutScore;
         }
+
+        protected override void Reinitialize()
+        {
+            base.Reinitialize();
+            this.InitialScore = -1;
+        }
+
         public new class Pool : ScoringElement.Pool<CustomGoodCutScoringElement>
         {
         }
