@@ -32,6 +32,8 @@ namespace HttpSiraStatus.Models
         public float swingRating { get; internal set; } = 0;
         public float beforeSwingRating { get; internal set; } = 0;
         public float afterSwingRating { get; internal set; } = 0;
+        public float afterCutScore { get; internal set; } = 0;
+        public float beforeCutScore { get; internal set; } = 0;
         public float timeDeviation { get; internal set; } = 0;
         public float cutDirectionDeviation { get; internal set; } = 0;
         public Vector3 cutPoint { get; internal set; } = Vector3.zero;
@@ -39,7 +41,6 @@ namespace HttpSiraStatus.Models
         public float cutDistanceToCenter { get; internal set; } = 0;
         public float timeToNextBasicNote { get; internal set; } = 0;
         public string gameplayType { get; internal set; } = "";
-
         public void ResetNoteCut()
         {
             this.noteID = -1;
@@ -68,6 +69,8 @@ namespace HttpSiraStatus.Models
             this.beforeSwingRating = 0;
             this.afterSwingRating = 0;
             this.timeDeviation = 0;
+            this.afterCutScore = 0;
+            this.beforeCutScore = 0;
             this.cutDirectionDeviation = 0;
             this.cutPoint = Vector3.zero;
             this.cutNormal = Vector3.zero;
@@ -100,6 +103,8 @@ namespace HttpSiraStatus.Models
             notecut["swingRating"] = this.swingRating;
             notecut["beforeSwingRating"] = this.beforeSwingRating;
             notecut["afterSwingRating"] = this.afterSwingRating;
+            notecut["beforeCutScore"] = this.beforeCutScore;
+            notecut["afterCutScore"] = this.afterCutScore;
             notecut["multiplier"] = this.cutMultiplier;
             notecut["saberSpeed"] = this.saberSpeed;
             notecut["saberDir"] = new JSONArray();

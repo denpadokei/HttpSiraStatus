@@ -186,6 +186,8 @@ namespace HttpSiraStatus.Models
                 notecut.initialScore = element.cutScore;
                 notecut.beforeSwingRating = cutScoreBuffer.beforeCutSwingRating;
                 notecut.afterSwingRating = cutScoreBuffer.afterCutSwingRating;
+                notecut.beforeCutScore = cutScoreBuffer.beforeCutScore;
+                notecut.afterCutScore = cutScoreBuffer.afterCutScore;
             }
             else if (obj is MissScoringElement && colorType != ColorType.None) {
                 this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteMissed);
@@ -209,6 +211,8 @@ namespace HttpSiraStatus.Models
                 notecut.finalScore = element.cutScore;
                 notecut.beforeSwingRating = cutScoreBuffer.beforeCutSwingRating;
                 notecut.afterSwingRating = cutScoreBuffer.afterCutSwingRating;
+                notecut.beforeCutScore = cutScoreBuffer.beforeCutScore;
+                notecut.afterCutScore = cutScoreBuffer.afterCutScore;
             }
             else if (obj is CustomBadCutScoringElement badElement && obj.noteData.colorType != ColorType.None) {
                 var notecut = this.SetNoteCutStatus(badElement.NoteDataEntity, BeatSaberEvent.NoteFullyCut, badElement.SaberDir, badElement.CutPoint, badElement.CutNormal, badElement.NoteCutInfo);

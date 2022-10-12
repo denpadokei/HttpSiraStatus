@@ -7,6 +7,8 @@ namespace HttpSiraStatus.Interfaces
     {
         float afterSwingRating { get; }
         float beforeSwingRating { get; }
+        float afterCutScore { get; }
+        float beforeCutScore { get; }
         float cutDirectionDeviation { get; }
         int cutDistanceScore { get; }
         float cutDistanceToCenter { get; }
