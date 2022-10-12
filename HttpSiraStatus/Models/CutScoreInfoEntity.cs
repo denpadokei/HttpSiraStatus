@@ -1,4 +1,5 @@
 ﻿using HttpSiraStatus.Interfaces;
+using HttpSiraStatus.Util;
 using UnityEngine;
 using Zenject;
 
@@ -72,6 +73,60 @@ namespace HttpSiraStatus.Models
             this.cutNormal = Vector3.zero;
             this.cutDistanceToCenter = 0;
             this.gameplayType = "";
+        }
+
+        public JSONObject ToJSON()
+        {
+            var notecut = new JSONObject();
+
+            notecut["noteID"] = this.noteID;
+            notecut["noteType"] = this.StringOrNull(this.noteType);
+            notecut["noteCutDirection"] = this.StringOrNull(this.noteCutDirection);
+            notecut["sliderHeadCutDirection"] = this.StringOrNull(this.sliderHeadCutDirection);
+            notecut["sliderTailCutDirection"] = this.StringOrNull(this.sliderTailCutDirection);
+            notecut["noteLine"] = this.noteLine;
+            notecut["noteLayer"] = this.noteLayer;
+            notecut["sliderHeadLine"] = this.sliderHeadLine;
+            notecut["sliderHeadLayer"] = this.sliderHeadLayer;
+            notecut["sliderTailLine"] = this.sliderTailLine;
+            notecut["sliderTailLayer"] = this.sliderTailLayer;
+            notecut["speedOK"] = this.speedOK;
+            notecut["directionOK"] = this.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(this.directionOK);
+            notecut["saberTypeOK"] = this.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(this.saberTypeOK);
+            notecut["wasCutTooSoon"] = this.wasCutTooSoon;
+            notecut["initialScore"] = this.initialScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this.initialScore);
+            notecut["finalScore"] = this.finalScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this.finalScore);
+            notecut["cutDistanceScore"] = this.cutDistanceScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(this.cutDistanceScore);
+            notecut["swingRating"] = this.swingRating;
+            notecut["beforSwingRating"] = this.beforSwingRating;
+            notecut["afterSwingRating"] = this.afterSwingRating;
+            notecut["multiplier"] = this.cutMultiplier;
+            notecut["saberSpeed"] = this.saberSpeed;
+            notecut["saberDir"] = new JSONArray();
+            notecut["saberDir"][0].AsFloat = this.saberDir.x;
+            notecut["saberDir"][1].AsFloat = this.saberDir.y;
+            notecut["saberDir"][2].AsFloat = this.saberDir.z;
+            notecut["saberType"] = this.StringOrNull(this.saberType);
+            notecut["timeDeviation"] = this.timeDeviation;
+            notecut["cutDirectionDeviation"] = this.cutDirectionDeviation;
+            notecut["cutPoint"] = new JSONArray();
+            notecut["cutPoint"][0].AsFloat = this.cutPoint.x;
+            notecut["cutPoint"][1].AsFloat = this.cutPoint.y;
+            notecut["cutPoint"][2].AsFloat = this.cutPoint.z;
+            notecut["cutNormal"] = new JSONArray();
+            notecut["cutNormal"][0].AsFloat = this.cutNormal.x;
+            notecut["cutNormal"][1].AsFloat = this.cutNormal.y;
+            notecut["cutNormal"][2].AsFloat = this.cutNormal.z;
+            notecut["cutDistanceToCenter"] = this.cutDistanceToCenter;
+            notecut["timeToNextBasicNote"] = this.timeToNextBasicNote;
+            notecut["gameplayType"] = this.StringOrNull(this.gameplayType);
+
+            return notecut;
+        }
+
+        private JSONNode StringOrNull(string str)
+        {
+            return string.IsNullOrEmpty(str) ? JSONNull.CreateOrGet() : new JSONString(str);
         }
 
         public class Pool : MemoryPool<CutScoreInfoEntity>

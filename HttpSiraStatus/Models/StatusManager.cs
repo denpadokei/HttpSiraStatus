@@ -9,7 +9,7 @@ using Zenject;
 
 namespace HttpSiraStatus
 {
-    public class StatusManager : IStatusManager, IDisposable
+    public class StatusManager : IStatusManager, IDisposable, ITickable
     {
         [Inject]
         internal StatusManager(GameStatus gameStatus, CutScoreInfoEntity.Pool cutScorePool, V2BeatmapEventInfomation.Pool v2Pool, V3BeatmapEventInfomation.Pool v3Pool)
@@ -26,12 +26,11 @@ namespace HttpSiraStatus
 
         public IGameStatus GameStatus => this._gameStatus;
         public JSONObject StatusJSON { get; } = new JSONObject();
-        public ConcurrentQueue<JSONObject> NoteCutJSON { get; } = new ConcurrentQueue<JSONObject>();
         public ConcurrentQueue<IBeatmapEventInformation> BeatmapEventJSON { get; } = new ConcurrentQueue<IBeatmapEventInformation>();
         public JSONObject OtherJSON { get; } = new JSONObject();
         public ObjectMemoryPool<JSONObject> JsonPool { get; }
         public ConcurrentQueue<JSONObject> JsonQueue { get; } = new ConcurrentQueue<JSONObject>();
-        public ConcurrentQueue<CutScoreInfoEntity> CutScoreInfoQueue { get; } = new ConcurrentQueue<CutScoreInfoEntity>();
+        public ConcurrentQueue<(CutScoreInfoEntity entity, BeatSaberEvent e)> CutScoreInfoQueue { get; } = new ConcurrentQueue<(CutScoreInfoEntity entity, BeatSaberEvent e)>();
 
         public event SendEventHandler SendEvent;
         private readonly Thread _thread;
@@ -54,10 +53,6 @@ namespace HttpSiraStatus
 
             if ((changedProps & ChangedProperty.Performance) == ChangedProperty.Performance) {
                 this.UpdatePerformanceJSON();
-            }
-
-            if ((changedProps & ChangedProperty.NoteCut) == ChangedProperty.NoteCut) {
-                this.UpdateNoteCutJSON();
             }
 
             if ((changedProps & ChangedProperty.Mod) == ChangedProperty.Mod) {
@@ -97,22 +92,7 @@ namespace HttpSiraStatus
                 }
                 eventJSON["status"] = status;
             }
-            if ((changedProps & ChangedProperty.NoteCut) == ChangedProperty.NoteCut && this.NoteCutJSON.TryDequeue(out var notecut)) {
-                eventJSON["noteCut"] = notecut;
-            }
-            if ((changedProps & ChangedProperty.BeatmapEvent) == ChangedProperty.BeatmapEvent && this.BeatmapEventJSON.TryDequeue(out var eventInformation)) {
-                eventJSON["beatmapEvent"] = eventInformation.ToJson();
-                switch (eventInformation) {
-                    case V2BeatmapEventInfomation v2:
-                        this._v2Pool.Despawn(v2);
-                        break;
-                    case V3BeatmapEventInfomation v3:
-                        this._v3Pool.Despawn(v3);
-                        break;
-                    default:
-                        break;
-                }
-            }
+
             if ((changedProps & ChangedProperty.Other) != 0) {
                 eventJSON["other"] = this.OtherJSON;
             }
@@ -141,7 +121,6 @@ namespace HttpSiraStatus
                 this.UpdateGameJSON();
                 this.UpdateBeatmapJSON();
                 this.UpdatePerformanceJSON();
-                this.UpdateNoteCutJSON();
                 this.UpdateModJSON();
                 this.UpdatePlayerSettingsJSON();
             }
@@ -266,68 +245,6 @@ namespace HttpSiraStatus
             performanceJSON["currentSongTime"].AsInt = this._gameStatus.currentSongTime;
         }
 
-        private void UpdateNoteCutJSON()
-        {
-            if (!this.CutScoreInfoQueue.TryDequeue(out var cutScoreInfo)) {
-                return;
-            }
-
-            var notecut = new JSONObject();
-
-            notecut["noteID"] = cutScoreInfo.noteID;
-            notecut["noteType"] = this.StringOrNull(cutScoreInfo.noteType);
-            notecut["noteCutDirection"] = this.StringOrNull(cutScoreInfo.noteCutDirection);
-            notecut["sliderHeadCutDirection"] = this.StringOrNull(cutScoreInfo.sliderHeadCutDirection);
-            notecut["sliderTailCutDirection"] = this.StringOrNull(cutScoreInfo.sliderTailCutDirection);
-            notecut["noteLine"] = cutScoreInfo.noteLine;
-            notecut["noteLayer"] = cutScoreInfo.noteLayer;
-            notecut["sliderHeadLine"] = cutScoreInfo.sliderHeadLine;
-            notecut["sliderHeadLayer"] = cutScoreInfo.sliderHeadLayer;
-            notecut["sliderTailLine"] = cutScoreInfo.sliderTailLine;
-            notecut["sliderTailLayer"] = cutScoreInfo.sliderTailLayer;
-            notecut["speedOK"] = cutScoreInfo.speedOK;
-            notecut["directionOK"] = cutScoreInfo.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(cutScoreInfo.directionOK);
-            notecut["saberTypeOK"] = cutScoreInfo.noteType == "Bomb" ? JSONNull.CreateOrGet() : new JSONBool(cutScoreInfo.saberTypeOK);
-            notecut["wasCutTooSoon"] = cutScoreInfo.wasCutTooSoon;
-            notecut["initialScore"] = cutScoreInfo.initialScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(cutScoreInfo.initialScore);
-            notecut["finalScore"] = cutScoreInfo.finalScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(cutScoreInfo.finalScore);
-            notecut["cutDistanceScore"] = cutScoreInfo.cutDistanceScore == -1 ? JSONNull.CreateOrGet() : new JSONNumber(cutScoreInfo.cutDistanceScore);
-            notecut["swingRating"] = cutScoreInfo.swingRating;
-            notecut["beforSwingRating"] = cutScoreInfo.beforSwingRating;
-            notecut["afterSwingRating"] = cutScoreInfo.afterSwingRating;
-            notecut["multiplier"] = cutScoreInfo.cutMultiplier;
-            notecut["saberSpeed"] = cutScoreInfo.saberSpeed;
-            if (!notecut["saberDir"].IsArray) {
-                notecut["saberDir"] = new JSONArray();
-            }
-
-            notecut["saberDir"][0].AsFloat = cutScoreInfo.saberDir.x;
-            notecut["saberDir"][1].AsFloat = cutScoreInfo.saberDir.y;
-            notecut["saberDir"][2].AsFloat = cutScoreInfo.saberDir.z;
-            notecut["saberType"] = this.StringOrNull(cutScoreInfo.saberType);
-            notecut["timeDeviation"] = cutScoreInfo.timeDeviation;
-            notecut["cutDirectionDeviation"] = cutScoreInfo.cutDirectionDeviation;
-            if (!notecut["cutPoint"].IsArray) {
-                notecut["cutPoint"] = new JSONArray();
-            }
-
-            notecut["cutPoint"][0].AsFloat = cutScoreInfo.cutPoint.x;
-            notecut["cutPoint"][1].AsFloat = cutScoreInfo.cutPoint.y;
-            notecut["cutPoint"][2].AsFloat = cutScoreInfo.cutPoint.z;
-            if (!notecut["cutNormal"].IsArray) {
-                notecut["cutNormal"] = new JSONArray();
-            }
-
-            notecut["cutNormal"][0].AsFloat = cutScoreInfo.cutNormal.x;
-            notecut["cutNormal"][1].AsFloat = cutScoreInfo.cutNormal.y;
-            notecut["cutNormal"][2].AsFloat = cutScoreInfo.cutNormal.z;
-            notecut["cutDistanceToCenter"] = cutScoreInfo.cutDistanceToCenter;
-            notecut["timeToNextBasicNote"] = cutScoreInfo.timeToNextBasicNote;
-            notecut["gameplayType"] = this.StringOrNull(cutScoreInfo.gameplayType);
-            this._cutScorePool.Despawn(cutScoreInfo);
-            this.NoteCutJSON.Enqueue(notecut);
-        }
-
         private void UpdateModJSON()
         {
             if (this.StatusJSON["mod"] == null) {
@@ -392,6 +309,46 @@ namespace HttpSiraStatus
         {
             // このコードを変更しないでください。クリーンアップ コードを 'Dispose(bool disposing)' メソッドに記述します
             this.Dispose(disposing: true);
+        }
+
+        public void Tick()
+        {
+            this.EnqueueCutInfo();
+            this.EnqueueBeatmapEvent();
+        }
+
+        private void EnqueueCutInfo()
+        {
+            while (this.CutScoreInfoQueue.TryDequeue(out var cutScoreInfo)) {
+                var status = new JSONObject();
+                status["performance"] = this.StatusJSON["performance"];
+                var eventJSON = this.JsonPool.Spawn();
+                eventJSON["event"] = cutScoreInfo.e.GetDescription();
+                eventJSON["noteCut"] = cutScoreInfo.entity.ToJSON();
+                eventJSON["status"] = status;
+                this.JsonQueue.Enqueue(eventJSON);
+                this._cutScorePool.Despawn(cutScoreInfo.entity);
+            }
+        }
+
+        private void EnqueueBeatmapEvent()
+        {
+            while (this.BeatmapEventJSON.TryDequeue(out var beatmapEventInformation)) {
+                var eventJSON = this.JsonPool.Spawn();
+                eventJSON["event"] = BeatSaberEvent.BeatmapEvent.GetDescription();
+                eventJSON["beatmapEvent"] = beatmapEventInformation.ToJson();
+                switch (beatmapEventInformation) {
+                    case V2BeatmapEventInfomation v2:
+                        this._v2Pool.Despawn(v2);
+                        break;
+                    case V3BeatmapEventInfomation v3:
+                        this._v3Pool.Despawn(v3);
+                        break;
+                    default:
+                        break;
+                }
+                this.JsonQueue.Enqueue(eventJSON);
+            }
         }
     }
 }

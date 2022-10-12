@@ -169,38 +169,29 @@ namespace HttpSiraStatus.Models
             if (obj.noteData.scoringType != NoteData.ScoringType.Ignore) {
                 this._sortedNoteTimesWithoutScoringElements.InsertIntoSortedListFromEnd(obj.noteData.time);
             }
-            this.SetNoteCutStatus(obj.noteData);
-            this._statusManager.EmitStatusUpdate(ChangedProperty.NoteCut, BeatSaberEvent.NoteSpawned);
+            this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteSpawned);
         }
 
         private void OnBeatmapObjectManager_sliderWasSpawnedEvent(SliderController obj)
         {
-            this.SetNoteCutStatus(obj.sliderData);
-            this._statusManager.EmitStatusUpdate(ChangedProperty.NoteCut, BeatSaberEvent.NoteSpawned);
+            this.SetNoteCutStatus(obj.sliderData, BeatSaberEvent.NoteSpawned);
         }
         private void ScoreController_scoringForNoteStartedEvent(ScoringElement obj, ColorType colorType)
         {
             if (obj is CustomGoodCutScoringElement element) {
                 var cutScoreBuffer = element.cutScoreBuffer;
                 var noteCutInfo = cutScoreBuffer.noteCutInfo;
-                var notecut = this.SetNoteCutStatus(element.NoteDataEntity, element.SaberDir, element.CutPoint, element.CutNormal, noteCutInfo);
+                var notecut = this.SetNoteCutStatus(element.NoteDataEntity, BeatSaberEvent.NoteCut, element.SaberDir, element.CutPoint, element.CutNormal, noteCutInfo);
                 notecut.cutDistanceScore = element.cutScoreBuffer.centerDistanceCutScore;
                 notecut.initialScore = element.cutScore;
-                this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.NoteCut);
             }
             else if (obj is MissScoringElement && colorType != ColorType.None) {
-                this.SetNoteCutStatus(obj.noteData);
+                this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteMissed);
                 this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.NoteMissed);
             }
             else if (obj is CustomBadCutScoringElement badElement) {
-                var notecut = this.SetNoteCutStatus(badElement.NoteDataEntity, badElement.SaberDir, badElement.CutPoint, badElement.CutNormal, badElement.NoteCutInfo);
+                var notecut = this.SetNoteCutStatus(badElement.NoteDataEntity, colorType == ColorType.None ? BeatSaberEvent.BombCut : BeatSaberEvent.NoteCut, badElement.SaberDir, badElement.CutPoint, badElement.CutNormal, badElement.NoteCutInfo);
                 notecut.initialScore = badElement.cutScore;
-                if (colorType == ColorType.None) {
-                    this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.BombCut);
-                }
-                else {
-                    this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.NoteCut);
-                }
             }
         }
 
@@ -209,37 +200,37 @@ namespace HttpSiraStatus.Models
             if (obj is CustomGoodCutScoringElement element) {
                 var cutScoreBuffer = element.cutScoreBuffer;
                 var noteCutInfo = cutScoreBuffer.noteCutInfo;
-                var notecut = this.SetNoteCutStatus(element.NoteDataEntity, element.SaberDir, element.CutPoint, element.CutNormal, noteCutInfo);
+                var notecut = this.SetNoteCutStatus(element.NoteDataEntity, BeatSaberEvent.NoteFullyCut, element.SaberDir, element.CutPoint, element.CutNormal, noteCutInfo);
                 notecut.cutMultiplier = element.multiplier;
                 notecut.cutDistanceScore = element.cutScoreBuffer.centerDistanceCutScore;
+                notecut.initialScore = element.InitialScore;
                 notecut.finalScore = element.cutScore;
-                this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.NoteFullyCut);
             }
             else if (obj is CustomBadCutScoringElement badElement && obj.noteData.colorType != ColorType.None) {
-                var notecut = this.SetNoteCutStatus(badElement.NoteDataEntity, badElement.SaberDir, badElement.CutPoint, badElement.CutNormal, badElement.NoteCutInfo);
+                var notecut = this.SetNoteCutStatus(badElement.NoteDataEntity, BeatSaberEvent.NoteFullyCut, badElement.SaberDir, badElement.CutPoint, badElement.CutNormal, badElement.NoteCutInfo);
                 notecut.cutMultiplier = badElement.multiplier;
+                notecut.initialScore = badElement.InitialScore;
                 notecut.finalScore = badElement.cutScore;
-                this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.NoteFullyCut);
             }
         }
 
-        private CutScoreInfoEntity SetNoteCutStatus(BeatmapObjectData obj)
+        private CutScoreInfoEntity SetNoteCutStatus(BeatmapObjectData obj, BeatSaberEvent cutEvent)
         {
             CutScoreInfoEntity cutScoreInfoEntity = null;
             if (obj is NoteData noteData) {
                 var noteDataEntity = this._notePool.Spawn(noteData, this._gameplayModifiers.noArrows);
-                cutScoreInfoEntity = this.SetNoteCutStatus(noteDataEntity);
+                cutScoreInfoEntity = this.SetNoteCutStatus(noteDataEntity, cutEvent);
                 this._notePool.Despawn(noteDataEntity);
             }
             else if (obj is SliderData sliderData) {
                 var noteDataEntity = this._sliderPool.Spawn(sliderData);
-                cutScoreInfoEntity = this.SetNoteCutStatus(noteDataEntity);
+                cutScoreInfoEntity = this.SetNoteCutStatus(noteDataEntity, cutEvent);
                 this._sliderPool.Despawn(noteDataEntity);
             }
             return cutScoreInfoEntity;
         }
 
-        private CutScoreInfoEntity SetNoteCutStatus(IBeatmapObjectEntity entity, in Vector3 saberDir = default, in Vector3 cutPoint = default, in Vector3 cutNormal = default, in NoteCutInfo noteCutInfo = default)
+        private CutScoreInfoEntity SetNoteCutStatus(IBeatmapObjectEntity entity, BeatSaberEvent cutEvent, in Vector3 saberDir = default, in Vector3 cutPoint = default, in Vector3 cutNormal = default, in NoteCutInfo noteCutInfo = default)
         {
             var notecut = this._cutScoreInfoEntityPool.Spawn();
             // Check the near notes first for performance
@@ -306,7 +297,7 @@ namespace HttpSiraStatus.Models
                 notecut.cutNormal = cutNormal;
                 notecut.cutDistanceToCenter = noteCutInfo.cutDistanceToCenter;
             }
-            this._statusManager.CutScoreInfoQueue.Enqueue(notecut);
+            this._statusManager.CutScoreInfoQueue.Enqueue((notecut, cutEvent));
             return notecut;
         }
 
