@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using HttpSiraStatus.Enums;
+using UnityEngine;
 
 namespace HttpSiraStatus.Interfaces
 {

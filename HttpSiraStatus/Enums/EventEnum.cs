@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 
-namespace HttpSiraStatus
+namespace HttpSiraStatus.Enums
 {
     /// <summary>
     /// 拡張メソッド用クラス
@@ -16,12 +16,9 @@ namespace HttpSiraStatus
         public static string GetDescription(this Enum value)
         {
             var field = value.GetType().GetField(value.ToString());
-            if (Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) is DescriptionAttribute attribute) {
-                return attribute.Description;
-            }
-            else {
-                return value.ToString();
-            }
+            return Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) is DescriptionAttribute attribute
+                ? attribute.Description
+                : value.ToString();
         }
     }
 

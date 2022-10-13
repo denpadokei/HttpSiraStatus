@@ -5,7 +5,7 @@ using System.Text;
 using WebSocketSharp.Server;
 using Zenject;
 
-namespace HttpSiraStatus
+namespace HttpSiraStatus.Models
 {
     public class HTTPServer : IInitializable, IDisposable
     {

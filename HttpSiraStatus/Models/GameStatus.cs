@@ -1,7 +1,8 @@
+using HttpSiraStatus.Enums;
 using HttpSiraStatus.Interfaces;
 using UnityEngine;
 
-namespace HttpSiraStatus
+namespace HttpSiraStatus.Models
 {
     internal class GameStatus : IGameStatus
     {

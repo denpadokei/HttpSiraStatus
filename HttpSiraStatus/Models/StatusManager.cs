@@ -1,5 +1,5 @@
+using HttpSiraStatus.Enums;
 using HttpSiraStatus.Interfaces;
-using HttpSiraStatus.Models;
 using HttpSiraStatus.Util;
 using System;
 using System.Collections.Concurrent;
@@ -7,7 +7,7 @@ using System.Threading;
 using UnityEngine;
 using Zenject;
 
-namespace HttpSiraStatus
+namespace HttpSiraStatus.Models
 {
     public class StatusManager : IStatusManager, IDisposable, ITickable
     {
@@ -320,12 +320,14 @@ namespace HttpSiraStatus
         private void EnqueueCutInfo()
         {
             while (this.CutScoreInfoQueue.TryDequeue(out var cutScoreInfo)) {
-                var status = new JSONObject();
-                status["performance"] = this.StatusJSON["performance"];
                 var eventJSON = this.JsonPool.Spawn();
                 eventJSON["event"] = cutScoreInfo.e.GetDescription();
-                eventJSON["noteCut"] = cutScoreInfo.entity.ToJSON();
-                eventJSON["status"] = status;
+                eventJSON["noteCut"] = cutScoreInfo.entity.ToJson();
+                if (cutScoreInfo.e != BeatSaberEvent.NoteSpawned) {
+                    var status = new JSONObject();
+                    status["performance"] = this.StatusJSON["performance"];
+                    eventJSON["status"] = status;
+                }
                 this.JsonQueue.Enqueue(eventJSON);
                 this._cutScorePool.Despawn(cutScoreInfo.entity);
             }

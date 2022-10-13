@@ -78,7 +78,7 @@ namespace HttpSiraStatus.Models
             this.gameplayType = "";
         }
 
-        public JSONObject ToJSON()
+        public JSONObject ToJson()
         {
             var notecut = new JSONObject();
 

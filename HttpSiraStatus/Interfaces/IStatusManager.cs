@@ -1,6 +1,6 @@
-﻿using HttpSiraStatus.Models;
+﻿using HttpSiraStatus.Enums;
+using HttpSiraStatus.Models;
 using HttpSiraStatus.Util;
-using System;
 using System.Collections.Concurrent;
 
 namespace HttpSiraStatus.Interfaces

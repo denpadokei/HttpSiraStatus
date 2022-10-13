@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HttpSiraStatus.Enums;
+using System;
 using Zenject;
 
 namespace HttpSiraStatus.Models

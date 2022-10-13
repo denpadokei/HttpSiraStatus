@@ -3,7 +3,7 @@ using HttpSiraStatus.Util;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 
-namespace HttpSiraStatus
+namespace HttpSiraStatus.Models
 {
     public class StatusBroadcastBehavior : WebSocketBehavior
     {

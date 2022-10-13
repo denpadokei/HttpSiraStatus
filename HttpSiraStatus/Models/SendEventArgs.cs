@@ -1,6 +1,6 @@
 ﻿using HttpSiraStatus.Util;
 
-namespace HttpSiraStatus
+namespace HttpSiraStatus.Models
 {
     public class SendEventArgs
     {

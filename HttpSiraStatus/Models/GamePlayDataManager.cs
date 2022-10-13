@@ -1,4 +1,5 @@
-﻿using HttpSiraStatus.Interfaces;
+﻿using HttpSiraStatus.Enums;
+using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
 using IPA.Utilities;
 using SiraUtil.Affinity;
@@ -366,7 +367,6 @@ namespace HttpSiraStatus.Models
                     this._statusManager.BeatmapEventJSON.Enqueue(info);
                     break;
             }
-            this._statusManager.EmitStatusUpdate(ChangedProperty.BeatmapEvent, BeatSaberEvent.BeatmapEvent);
         }
 
         public void DespawnScoringElement(ScoringElement scoringElement)
@@ -715,7 +715,7 @@ namespace HttpSiraStatus.Models
                 // Unity sucks. The coordinates of the sprite on its texture atlas are only accessible through the Sprite.uv property since rect always returns `x=0,y=0`, so we need to convert them back into texture space.
                 cover.ReadPixels(new Rect(
                     uv.x * texture.width,
-                    texture.height - uv.y * texture.height,
+                    texture.height - (uv.y * texture.height),
                     spriteRect.width,
                     spriteRect.height
                 ), 0, 0);
