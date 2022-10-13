@@ -39,8 +39,10 @@ namespace HttpSiraStatus
         public Color? colorSaberB { get; internal set; } = null;
         public Color? colorEnvironment0 { get; internal set; } = null;
         public Color? colorEnvironment1 { get; internal set; } = null;
+        public Color? colorEnvironmentW { get; internal set; } = null;
         public Color? colorEnvironmentBoost0 { get; internal set; } = null;
         public Color? colorEnvironmentBoost1 { get; internal set; } = null;
+        public Color? colorEnvironmentBoostW { get; internal set; } = null;
         public Color? colorObstacle { get; internal set; } = null;
 
         // Performance
@@ -124,8 +126,10 @@ namespace HttpSiraStatus
             this.colorSaberB = null;
             this.colorEnvironment0 = null;
             this.colorEnvironment1 = null;
+            this.colorEnvironmentW = null;
             this.colorEnvironmentBoost0 = null;
             this.colorEnvironmentBoost1 = null;
+            this.colorEnvironmentBoostW = null;
             this.colorObstacle = null;
         }
 

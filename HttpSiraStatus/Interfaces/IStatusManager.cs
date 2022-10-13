@@ -7,8 +7,6 @@ namespace HttpSiraStatus.Interfaces
 {
     public interface IStatusManager
     {
-        [Obsolete("このプロパティはいずれなくなります。DiContainerからInjectで取得してください。", true)]
-        IGameStatus GameStatus { get; }
         JSONObject StatusJSON { get; }
         ConcurrentQueue<(CutScoreInfoEntity entity, BeatSaberEvent e)> CutScoreInfoQueue { get; }
         ConcurrentQueue<IBeatmapEventInformation> BeatmapEventJSON { get; }

@@ -23,8 +23,6 @@ namespace HttpSiraStatus
             this._thread.Start();
             this._cutScorePool = cutScorePool;
         }
-
-        public IGameStatus GameStatus => this._gameStatus;
         public JSONObject StatusJSON { get; } = new JSONObject();
         public ConcurrentQueue<IBeatmapEventInformation> BeatmapEventJSON { get; } = new ConcurrentQueue<IBeatmapEventInformation>();
         public JSONObject OtherJSON { get; } = new JSONObject();
@@ -189,8 +187,10 @@ namespace HttpSiraStatus
             this.UpdateColor(this._gameStatus.colorSaberB, colorJSON, "saberB");
             this.UpdateColor(this._gameStatus.colorEnvironment0, colorJSON, "environment0");
             this.UpdateColor(this._gameStatus.colorEnvironment1, colorJSON, "environment1");
+            this.UpdateColor(this._gameStatus.colorEnvironmentW, colorJSON, "environmentW");
             this.UpdateColor(this._gameStatus.colorEnvironmentBoost0, colorJSON, "environment0Boost");
             this.UpdateColor(this._gameStatus.colorEnvironmentBoost1, colorJSON, "environment1Boost");
+            this.UpdateColor(this._gameStatus.colorEnvironmentBoostW, colorJSON, "environmentWBoost");
             this.UpdateColor(this._gameStatus.colorObstacle, colorJSON, "obstacle");
         }
 

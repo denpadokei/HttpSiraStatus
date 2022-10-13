@@ -13,8 +13,10 @@ namespace HttpSiraStatus.Interfaces
         string characteristic { get; }
         Color? colorEnvironment0 { get; }
         Color? colorEnvironment1 { get; }
+        Color? colorEnvironmentW { get; }
         Color? colorEnvironmentBoost0 { get; }
         Color? colorEnvironmentBoost1 { get; }
+        Color? colorEnvironmentBoostW { get; }
         Color? colorObstacle { get; }
         Color? colorSaberA { get; }
         Color? colorSaberB { get; }
