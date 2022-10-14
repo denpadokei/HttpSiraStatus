@@ -641,9 +641,9 @@ namespace HttpSiraStatus.Models
                 }
             }
             var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
-            foreach (var beatmapEvent in this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>().OrderBy(x => x.time).Select((x, i) => (x, i))) {
+            foreach (var beatmapEvent in this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>()) {
                 IBeatmapEventInformation info;
-                switch (beatmapEvent.x) {
+                switch (beatmapEvent) {
                     case BasicBeatmapEventData basic:
                         // V2 map
                         info = new V2BeatmapEventInfomation();
@@ -656,11 +656,11 @@ namespace HttpSiraStatus.Models
                     case SpawnRotationBeatmapEventData spawn:
                     default:
                         info = new V3BeatmapEventInfomation();
-                        info.Init(beatmapEvent.x);
+                        info.Init(beatmapEvent);
                         break;
                 }
-                if (!eventDic.ContainsKey(beatmapEvent.x)) {
-                    eventDic.Add(beatmapEvent.x, info);
+                if (!eventDic.ContainsKey(beatmapEvent)) {
+                    eventDic.Add(beatmapEvent, info);
                 }
             }
             this._eventToEventInfoMapping = new(eventDic);
