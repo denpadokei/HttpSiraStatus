@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Zenject;
+using static BeatmapSaveDataVersion2_6_0AndEarlier.BeatmapSaveData;
 
 namespace HttpSiraStatus.Models
 {
@@ -348,24 +349,8 @@ namespace HttpSiraStatus.Models
 
         private void OnBeatmapEventDidTrigger(BeatmapEventData beatmapEventData)
         {
-            IBeatmapEventInformation info;
-            switch (beatmapEventData) {
-                case BasicBeatmapEventData basic:
-                    // V2 map
-                    info = this._v2Pool.Spawn();
-                    info.Init(basic);
-                    this._statusManager.BeatmapEventJSON.Enqueue(info);
-                    break;
-                case BPMChangeBeatmapEventData bpm:
-                case ColorBoostBeatmapEventData color:
-                case LightColorBeatmapEventData lightColor:
-                case LightRotationBeatmapEventData lightRotation:
-                case SpawnRotationBeatmapEventData spawn:
-                default:
-                    info = this._v3Pool.Spawn();
-                    info.Init(beatmapEventData);
-                    this._statusManager.BeatmapEventJSON.Enqueue(info);
-                    break;
+            if (this._eventToEventInfoMapping.TryGetValue(beatmapEventData, out var beatmapEvent)) {
+                this._statusManager.BeatmapEventJSON.Enqueue(beatmapEvent);
             }
         }
 
@@ -396,8 +381,6 @@ namespace HttpSiraStatus.Models
         private CutScoreInfoEntity.Pool _cutScoreInfoEntityPool;
         private NoteDataEntity.Pool _notePool;
         private SliderDataEntity.Pool _sliderPool;
-        private V2BeatmapEventInfomation.Pool _v2Pool;
-        private V3BeatmapEventInfomation.Pool _v3Pool;
         private GameplayCoreSceneSetupData _gameplayCoreSceneSetupData;
         private PauseController _pauseController;
         private IScoreController _scoreController;
@@ -430,6 +413,7 @@ namespace HttpSiraStatus.Models
         /// Before 1.12.1 the noteID matched the note order in the beatmap file, but this is impossible to replicate now without hooking into the level loading code.
         /// </summary>
         private readonly ConcurrentDictionary<IBeatmapObjectEntity, int> _noteToIdMapping = new ConcurrentDictionary<IBeatmapObjectEntity, int>();
+        private readonly ConcurrentDictionary<BeatmapEventData, IBeatmapEventInformation> _eventToEventInfoMapping = new ConcurrentDictionary<BeatmapEventData, IBeatmapEventInformation>();
         #endregion
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*
         #region // 構築・破棄
@@ -466,8 +450,6 @@ namespace HttpSiraStatus.Models
             NoteDataEntity.Pool noteDataEntityPool,
             SliderDataEntity.Pool sliderDataEntityPool,
             CutScoreInfoEntity.Pool cutScoreInfoEntityPool,
-            V2BeatmapEventInfomation.Pool v2BeatmapEventInfomationPool,
-            V3BeatmapEventInfomation.Pool v3BeatmapEventInfomationPool,
             GameplayCoreSceneSetupData gameplayCoreSceneSetupData,
             IScoreController score,
             IComboController comboController,
@@ -489,8 +471,6 @@ namespace HttpSiraStatus.Models
             this._cutScoreInfoEntityPool = cutScoreInfoEntityPool;
             this._notePool = noteDataEntityPool;
             this._sliderPool = sliderDataEntityPool;
-            this._v2Pool = v2BeatmapEventInfomationPool;
-            this._v3Pool = v3BeatmapEventInfomationPool;
             this._gameplayCoreSceneSetupData = gameplayCoreSceneSetupData;
             this._scoreController = score;
             this._gameplayModifiers = gameplayModifiers;
@@ -524,6 +504,8 @@ namespace HttpSiraStatus.Models
 
                         // Clear note id mappings.
                         this._noteToIdMapping?.Clear();
+
+                        this._eventToEventInfoMapping?.Clear();
 
                         this._statusManager?.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.Menu);
 
@@ -657,6 +639,27 @@ namespace HttpSiraStatus.Models
                         Plugin.Logger.Warn($"{note.x}");
                     }
                 }
+            }
+            this._eventToEventInfoMapping.Clear();
+            foreach (var beatmapEvent in this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>().OrderBy(x => x.time).Select((x, i) => (x, i))) {
+                IBeatmapEventInformation info;
+                switch (beatmapEvent.x) {
+                    case BasicBeatmapEventData basic:
+                        // V2 map
+                        info = new V2BeatmapEventInfomation();
+                        info.Init(basic);
+                        break;
+                    case BPMChangeBeatmapEventData bpm:
+                    case ColorBoostBeatmapEventData color:
+                    case LightColorBeatmapEventData lightColor:
+                    case LightRotationBeatmapEventData lightRotation:
+                    case SpawnRotationBeatmapEventData spawn:
+                    default:
+                        info = new V3BeatmapEventInfomation();
+                        info.Init(beatmapEvent.x);
+                        break;
+                }
+                this._eventToEventInfoMapping.TryAdd(beatmapEvent.x, info);
             }
             this._gameStatus.songName = level.songName;
             this._gameStatus.songSubName = level.songSubName;

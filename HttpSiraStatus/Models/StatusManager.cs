@@ -1,6 +1,7 @@
 using HttpSiraStatus.Enums;
 using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
+using IPA.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -12,12 +13,10 @@ namespace HttpSiraStatus.Models
     public class StatusManager : IStatusManager, IDisposable, ITickable
     {
         [Inject]
-        internal StatusManager(GameStatus gameStatus, CutScoreInfoEntity.Pool cutScorePool, V2BeatmapEventInfomation.Pool v2Pool, V3BeatmapEventInfomation.Pool v3Pool)
+        internal StatusManager(GameStatus gameStatus, CutScoreInfoEntity.Pool cutScorePool)
         {
             this._gameStatus = gameStatus;
             this.JsonPool = new ObjectMemoryPool<JSONObject>(null, r => { r.Clear(); }, 20);
-            this._v2Pool = v2Pool;
-            this._v3Pool = v3Pool;
             this.UpdateAll();
             this._thread = new Thread(new ThreadStart(this.RaiseSendEvent));
             this._thread.Start();
@@ -35,8 +34,6 @@ namespace HttpSiraStatus.Models
         private bool _disposedValue;
         private readonly GameStatus _gameStatus;
         private readonly CutScoreInfoEntity.Pool _cutScorePool;
-        private readonly V2BeatmapEventInfomation.Pool _v2Pool;
-        private readonly V3BeatmapEventInfomation.Pool _v3Pool;
 
         public void EmitStatusUpdate(ChangedProperty changedProps, BeatSaberEvent e)
         {
@@ -338,17 +335,7 @@ namespace HttpSiraStatus.Models
             while (this.BeatmapEventJSON.TryDequeue(out var beatmapEventInformation)) {
                 var eventJSON = this.JsonPool.Spawn();
                 eventJSON["event"] = BeatSaberEvent.BeatmapEvent.GetDescription();
-                eventJSON["beatmapEvent"] = beatmapEventInformation.ToJson();
-                switch (beatmapEventInformation) {
-                    case V2BeatmapEventInfomation v2:
-                        this._v2Pool.Despawn(v2);
-                        break;
-                    case V3BeatmapEventInfomation v3:
-                        this._v3Pool.Despawn(v3);
-                        break;
-                    default:
-                        break;
-                }
+                eventJSON["beatmapEvent"] = beatmapEventInformation.SilializedJson;
                 this.JsonQueue.Enqueue(eventJSON);
             }
         }

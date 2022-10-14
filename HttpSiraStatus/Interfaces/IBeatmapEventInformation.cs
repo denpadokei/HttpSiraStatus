@@ -8,10 +8,11 @@ namespace HttpSiraStatus.Interfaces
         public string version { get; }
         public float time { get; }
         public int executionOrder { get; }
+        public JSONObject SilializedJson { get; }
         public IBeatmapEventInformation previousSameTypeEventData { get; }
         public IBeatmapEventInformation nextSameTypeEventData { get; }
         void Init(BeatmapEventData eventData, bool isChild = false);
         void Reset();
-        JSONObject ToJson(bool isChild = false);
+        JSONNode ToJson(bool isChild = false);
     }
 }

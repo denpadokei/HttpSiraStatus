@@ -14,6 +14,7 @@ namespace HttpSiraStatus.Models
         public int executionOrder { get; private set; }
         public IBeatmapEventInformation previousSameTypeEventData { get; private set; } = null;
         public IBeatmapEventInformation nextSameTypeEventData { get; private set; } = null;
+        public JSONObject SilializedJson { get; } = new JSONObject();
         #endregion
 
         #region BPM
@@ -95,6 +96,8 @@ namespace HttpSiraStatus.Models
                     this.BeatmapEventType = V3BeatmapEventType.Unknown;
                     break;
             }
+
+            this.ToJson(false);
         }
 
         public void Reset()
@@ -118,11 +121,13 @@ namespace HttpSiraStatus.Models
             this.RotationDirection = 0;
             this.previousSameTypeEventData?.Reset();
             this.nextSameTypeEventData?.Reset();
+            this.ToJson(false);
         }
 
-        public JSONObject ToJson(bool isChild)
+        public JSONNode ToJson(bool isChild)
         {
-            var result = new JSONObject();
+            var result = this.SilializedJson;
+            result.Clear();
             result["version"] = this.version;
             result["type"] = (int)this.BeatmapEventType;
             result["time"] = this.time;
@@ -160,18 +165,10 @@ namespace HttpSiraStatus.Models
                     break;
             }
             if (!isChild) {
-                result["previousSameTypeEventData"] = this.previousSameTypeEventData.ToJson(true);
-                result["nextSameTypeEventData"] = this.nextSameTypeEventData.ToJson(true);
+                result["previousSameTypeEventData"] = this.previousSameTypeEventData?.ToJson(true);
+                result["nextSameTypeEventData"] = this.nextSameTypeEventData?.ToJson(true);
             }
-            return result;
-        }
-
-        public class Pool : MemoryPool<V3BeatmapEventInfomation>
-        {
-            protected override void OnDespawned(V3BeatmapEventInfomation item)
-            {
-                item.Reset();
-            }
+            return result.Clone();
         }
     }
 }

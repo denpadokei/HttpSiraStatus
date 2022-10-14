@@ -1,5 +1,6 @@
 ﻿using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
+using IPA.Utilities;
 using Zenject;
 
 namespace HttpSiraStatus.Models
@@ -14,6 +15,7 @@ namespace HttpSiraStatus.Models
         public int executionOrder { get; private set; } = 0;
         public IBeatmapEventInformation previousSameTypeEventData { get; private set; } = null;
         public IBeatmapEventInformation nextSameTypeEventData { get; private set; } = null;
+        public JSONObject SilializedJson { get; } = new JSONObject();
 
         public void Init(BeatmapEventData eventData, bool isChild)
         {
@@ -30,6 +32,7 @@ namespace HttpSiraStatus.Models
                     this.nextSameTypeEventData.Init(eventData.nextSameTypeEventData, true);
                 }
             }
+            this.ToJson(false);
         }
 
         public void Reset()
@@ -41,11 +44,13 @@ namespace HttpSiraStatus.Models
             this.beatmapEventFloatValue = 0;
             this.previousSameTypeEventData?.Reset();
             this.nextSameTypeEventData?.Reset();
+            this.ToJson(false);
         }
 
-        public JSONObject ToJson(bool isChild)
+        public JSONNode ToJson(bool isChild)
         {
-            var result = new JSONObject();
+            var result = this.SilializedJson;
+            result.Clear();
             result["version"] = this.version;
             result["time"] = this.time;
             result["executionOrder"] = this.executionOrder;
@@ -53,18 +58,10 @@ namespace HttpSiraStatus.Models
             result["value"] = this.beatmapEventValue;
             result["floatValue"] = this.beatmapEventFloatValue;
             if (!isChild) {
-                result["previousSameTypeEventData"] = this.previousSameTypeEventData.ToJson(true);
-                result["nextSameTypeEventData"] = this.nextSameTypeEventData.ToJson(true);
+                result["previousSameTypeEventData"] = this.previousSameTypeEventData?.ToJson(true);
+                result["nextSameTypeEventData"] = this.nextSameTypeEventData?.ToJson(true);
             }
-            return result;
-        }
-
-        public class Pool : MemoryPool<V2BeatmapEventInfomation>
-        {
-            protected override void OnDespawned(V2BeatmapEventInfomation item)
-            {
-                item.Reset();
-            }
+            return result.Clone();
         }
     }
 }
