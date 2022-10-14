@@ -7,13 +7,13 @@ using SiraUtil.Zenject;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Zenject;
-using static BeatmapSaveDataVersion2_6_0AndEarlier.BeatmapSaveData;
 
 namespace HttpSiraStatus.Models
 {
@@ -349,7 +349,7 @@ namespace HttpSiraStatus.Models
 
         private void OnBeatmapEventDidTrigger(BeatmapEventData beatmapEventData)
         {
-            if (this._eventToEventInfoMapping.TryGetValue(beatmapEventData, out var beatmapEvent)) {
+            if (this._eventToEventInfoMapping?.TryGetValue(beatmapEventData, out var beatmapEvent) == true) {
                 this._statusManager.BeatmapEventJSON.Enqueue(beatmapEvent);
             }
         }
@@ -413,7 +413,7 @@ namespace HttpSiraStatus.Models
         /// Before 1.12.1 the noteID matched the note order in the beatmap file, but this is impossible to replicate now without hooking into the level loading code.
         /// </summary>
         private readonly ConcurrentDictionary<IBeatmapObjectEntity, int> _noteToIdMapping = new ConcurrentDictionary<IBeatmapObjectEntity, int>();
-        private readonly ConcurrentDictionary<BeatmapEventData, IBeatmapEventInformation> _eventToEventInfoMapping = new ConcurrentDictionary<BeatmapEventData, IBeatmapEventInformation>();
+        private ReadOnlyDictionary<BeatmapEventData, IBeatmapEventInformation> _eventToEventInfoMapping;
         #endregion
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*
         #region // 構築・破棄
@@ -505,7 +505,7 @@ namespace HttpSiraStatus.Models
                         // Clear note id mappings.
                         this._noteToIdMapping?.Clear();
 
-                        this._eventToEventInfoMapping?.Clear();
+                        this._eventToEventInfoMapping = null;
 
                         this._statusManager?.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.Menu);
 
@@ -640,7 +640,7 @@ namespace HttpSiraStatus.Models
                     }
                 }
             }
-            this._eventToEventInfoMapping.Clear();
+            var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
             foreach (var beatmapEvent in this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>().OrderBy(x => x.time).Select((x, i) => (x, i))) {
                 IBeatmapEventInformation info;
                 switch (beatmapEvent.x) {
@@ -659,8 +659,11 @@ namespace HttpSiraStatus.Models
                         info.Init(beatmapEvent.x);
                         break;
                 }
-                this._eventToEventInfoMapping.TryAdd(beatmapEvent.x, info);
+                if (!eventDic.ContainsKey(beatmapEvent.x)) {
+                    eventDic.Add(beatmapEvent.x, info);
+                }
             }
+            this._eventToEventInfoMapping = new(eventDic);
             this._gameStatus.songName = level.songName;
             this._gameStatus.songSubName = level.songSubName;
             this._gameStatus.songAuthorName = level.songAuthorName;
