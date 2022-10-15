@@ -215,6 +215,7 @@ namespace HttpSiraStatus.Models
                 notecut.afterSwingRating = cutScoreBuffer.afterCutSwingRating;
                 notecut.beforeCutScore = cutScoreBuffer.beforeCutScore;
                 notecut.afterCutScore = cutScoreBuffer.afterCutScore;
+                this._gameStatus.lastNoteScore = element.cutScore;
             }
             else if (obj is CustomBadCutScoringElement badElement && obj.noteData.colorType != ColorType.None) {
                 var notecut = this.SetNoteCutStatus(badElement.NoteDataEntity, BeatSaberEvent.NoteFullyCut, badElement.SaberDir, badElement.CutPoint, badElement.CutNormal, badElement.NoteCutInfo);
