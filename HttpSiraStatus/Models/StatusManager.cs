@@ -1,9 +1,10 @@
 using HttpSiraStatus.Enums;
+using HttpSiraStatus.Extentions;
 using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
-using IPA.Utilities;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using Zenject;
@@ -23,11 +24,11 @@ namespace HttpSiraStatus.Models
             this._cutScorePool = cutScorePool;
         }
         public JSONObject StatusJSON { get; } = new JSONObject();
-        public ConcurrentQueue<IBeatmapEventInformation> BeatmapEventJSON { get; } = new ConcurrentQueue<IBeatmapEventInformation>();
+        public Queue<IBeatmapEventInformation> BeatmapEventJSON { get; } = new Queue<IBeatmapEventInformation>();
         public JSONObject OtherJSON { get; } = new JSONObject();
         public ObjectMemoryPool<JSONObject> JsonPool { get; }
         public ConcurrentQueue<JSONObject> JsonQueue { get; } = new ConcurrentQueue<JSONObject>();
-        public ConcurrentQueue<(CutScoreInfoEntity entity, BeatSaberEvent e)> CutScoreInfoQueue { get; } = new ConcurrentQueue<(CutScoreInfoEntity entity, BeatSaberEvent e)>();
+        public Queue<(CutScoreInfoEntity entity, BeatSaberEvent e)> CutScoreInfoQueue { get; } = new Queue<(CutScoreInfoEntity entity, BeatSaberEvent e)>();
 
         public event SendEventHandler SendEvent;
         private readonly Thread _thread;
@@ -308,6 +309,9 @@ namespace HttpSiraStatus.Models
             this.Dispose(disposing: true);
         }
 
+        /// <summary>
+        /// Updateみたいなものメインスレッドで呼ばれる
+        /// </summary>
         public void Tick()
         {
             this.EnqueueCutInfo();

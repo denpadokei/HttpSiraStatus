@@ -1,7 +1,6 @@
 ﻿using HttpSiraStatus.Enums;
 using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
-using Zenject;
 
 namespace HttpSiraStatus.Models
 {

@@ -1,7 +1,5 @@
 ﻿using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
-using IPA.Utilities;
-using Zenject;
 
 namespace HttpSiraStatus.Models
 {
