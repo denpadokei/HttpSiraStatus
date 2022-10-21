@@ -695,11 +695,9 @@ namespace HttpSiraStatus.Models
             this._gameStatus.colorSaberB = colorScheme.saberBColor;
             this._gameStatus.colorEnvironment0 = colorScheme.environmentColor0;
             this._gameStatus.colorEnvironment1 = colorScheme.environmentColor1;
-            this._gameStatus.colorEnvironmentW = colorScheme.environmentColorW;
             if (colorScheme.supportsEnvironmentColorBoost) {
                 this._gameStatus.colorEnvironmentBoost0 = colorScheme.environmentColor0Boost;
                 this._gameStatus.colorEnvironmentBoost1 = colorScheme.environmentColor1Boost;
-                this._gameStatus.colorEnvironmentBoostW = colorScheme.environmentColorWBoost;
             }
             this._gameStatus.colorObstacle = colorScheme.obstaclesColor;
             this._gameplayModifierParams = this._gameplayModifiersSO.CreateModifierParamsList(this._gameplayModifiers);

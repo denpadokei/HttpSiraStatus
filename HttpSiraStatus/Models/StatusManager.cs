@@ -185,10 +185,8 @@ namespace HttpSiraStatus.Models
             this.UpdateColor(this._gameStatus.colorSaberB, colorJSON, "saberB");
             this.UpdateColor(this._gameStatus.colorEnvironment0, colorJSON, "environment0");
             this.UpdateColor(this._gameStatus.colorEnvironment1, colorJSON, "environment1");
-            this.UpdateColor(this._gameStatus.colorEnvironmentW, colorJSON, "environmentW");
             this.UpdateColor(this._gameStatus.colorEnvironmentBoost0, colorJSON, "environment0Boost");
             this.UpdateColor(this._gameStatus.colorEnvironmentBoost1, colorJSON, "environment1Boost");
-            this.UpdateColor(this._gameStatus.colorEnvironmentBoostW, colorJSON, "environmentWBoost");
             this.UpdateColor(this._gameStatus.colorObstacle, colorJSON, "obstacle");
         }
 
