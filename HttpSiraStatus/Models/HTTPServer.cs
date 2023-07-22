@@ -1,8 +1,8 @@
 using HttpSiraStatus.Configuration;
 using HttpSiraStatus.Interfaces;
+using HttpSiraStatus.WebSockets.Server;
 using System;
 using System.Text;
-using WebSocketSharp.Server;
 using Zenject;
 
 namespace HttpSiraStatus.Models

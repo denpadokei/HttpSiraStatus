@@ -48,14 +48,14 @@ namespace HttpSiraStatus.Models
                 goodCutScoringElement.Init(noteCutInfo, noteController, this._gameplayModifiers.noArrows);
                 this._sortedScoringElementsWithoutMultiplier.InsertIntoSortedListFromEnd(goodCutScoringElement);
                 this.ScoreController_scoringForNoteStartedEvent(goodCutScoringElement, noteController.noteData.colorType);
-                this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
+                _ = this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
             }
             else {
                 var badCutScoringElement = this._badCutScoringElementPool.Spawn();
                 badCutScoringElement.Init(noteCutInfo, noteController, this._gameplayModifiers.noArrows);
                 this._sortedScoringElementsWithoutMultiplier.InsertIntoSortedListFromEnd(badCutScoringElement);
                 this.ScoreController_scoringForNoteStartedEvent(badCutScoringElement, noteController.noteData.colorType);
-                this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
+                _ = this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
             }
         }
 
@@ -78,7 +78,7 @@ namespace HttpSiraStatus.Models
             missScoringElement.Init(noteData);
             this._sortedScoringElementsWithoutMultiplier.InsertIntoSortedListFromEnd(missScoringElement);
             this.ScoreController_scoringForNoteStartedEvent(missScoringElement, noteController.noteData.colorType);
-            this._sortedNoteTimesWithoutScoringElements.Remove(noteData.time);
+            _ = this._sortedNoteTimesWithoutScoringElements.Remove(noteData.time);
         }
         #endregion
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*
@@ -176,12 +176,12 @@ namespace HttpSiraStatus.Models
             if (obj.noteData.scoringType != NoteData.ScoringType.Ignore) {
                 this._sortedNoteTimesWithoutScoringElements.InsertIntoSortedListFromEnd(obj.noteData.time);
             }
-            this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteSpawned);
+            _ = this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteSpawned);
         }
 
         private void OnBeatmapObjectManager_sliderWasSpawnedEvent(SliderController obj)
         {
-            this.SetNoteCutStatus(obj.sliderData, BeatSaberEvent.NoteSpawned);
+            _ = this.SetNoteCutStatus(obj.sliderData, BeatSaberEvent.NoteSpawned);
         }
         private void ScoreController_scoringForNoteStartedEvent(ScoringElement obj, ColorType colorType)
         {
@@ -197,7 +197,7 @@ namespace HttpSiraStatus.Models
                 notecut.afterCutScore = cutScoreBuffer.afterCutScore;
             }
             else if (obj is MissScoringElement && colorType != ColorType.None) {
-                this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteMissed);
+                _ = this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteMissed);
                 this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.NoteMissed);
             }
             else if (obj is CustomBadCutScoringElement badElement) {
@@ -490,7 +490,7 @@ namespace HttpSiraStatus.Models
             this._beatmapObjectManager = beatmapObjectManager;
             this._comboController = comboController;
             this._beatmapData = readonlyBeatmapData;
-            this._config= config;
+            this._config = config;
             if (this._scoreController is ScoreController scoreController) {
                 this._gameplayModifiersSO = scoreController.GetField<GameplayModifiersModelSO, ScoreController>("_gameplayModifiersModel");
             }
@@ -541,10 +541,7 @@ namespace HttpSiraStatus.Models
                             this._levelEndActions.levelFailedEvent -= this.OnLevelFailed;
                         }
 
-                        if (this._beatmapObjectCallbackController != null) {
-                            this._beatmapObjectCallbackController.RemoveBeatmapCallback(this._eventDataCallbackWrapper);
-                            //this.beatmapObjectCallbackController.beatmapEventDidTriggerEvent -= this.OnBeatmapEventDidTrigger;
-                        }
+                        this._beatmapObjectCallbackController?.RemoveBeatmapCallback(this._eventDataCallbackWrapper);
 
                         if (this._beatmapObjectManager != null) {
                             this._beatmapObjectManager.noteWasSpawnedEvent -= this.OnNoteWasSpawnedEvent;
@@ -857,9 +854,9 @@ namespace HttpSiraStatus.Models
                 if (limitSongTime <= scoringElement.time && scoringElement.time <= lastProcessedElementTime) {
                     break;
                 }
-                this._scoreMultiplierCounter.ProcessMultiplierEvent(scoringElement.multiplierEventType);
+                _ = this._scoreMultiplierCounter.ProcessMultiplierEvent(scoringElement.multiplierEventType);
                 if (scoringElement.wouldBeCorrectCutBestPossibleMultiplierEventType == ScoreMultiplierCounter.MultiplierEventType.Positive) {
-                    this._maxScoreMultiplierCounter.ProcessMultiplierEvent(ScoreMultiplierCounter.MultiplierEventType.Positive);
+                    _ = this._maxScoreMultiplierCounter.ProcessMultiplierEvent(ScoreMultiplierCounter.MultiplierEventType.Positive);
                 }
                 scoringElement.SetMultipliers(this._scoreMultiplierCounter.multiplier, this._maxScoreMultiplierCounter.multiplier);
                 this._scoringElementsWithMultiplier.Add(scoringElement);
@@ -874,7 +871,7 @@ namespace HttpSiraStatus.Models
             }
             while (this._scoringElementsToRemove.Any()) {
                 var scoringElement3 = this._scoringElementsToRemove.Dequeue();
-                this._scoringElementsWithMultiplier.Remove(scoringElement3);
+                _ = this._scoringElementsWithMultiplier.Remove(scoringElement3);
                 this.DespawnScoringElement(scoringElement3);
             }
         }

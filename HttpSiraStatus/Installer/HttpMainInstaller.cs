@@ -6,7 +6,7 @@ namespace HttpSiraStatus.Installer
     {
         public override void InstallBindings()
         {
-            this.Container.BindInterfacesAndSelfTo<ModeSelectGetter>().AsCached().NonLazy();
+            _ = this.Container.BindInterfacesAndSelfTo<ModeSelectGetter>().AsCached().NonLazy();
         }
     }
 }
