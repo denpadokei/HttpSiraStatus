@@ -1821,11 +1821,9 @@ namespace HttpSiraStatus.WebSockets
         /// </exception>
         public static byte[] ToHostOrder(this byte[] source, ByteOrder sourceOrder)
         {
-            if (source == null) {
-                throw new ArgumentNullException("source");
-            }
-
-            return source.Length < 2 ? source : sourceOrder.IsHostOrder() ? source : source.Reverse();
+            return source == null
+                ? throw new ArgumentNullException("source")
+                : source.Length < 2 ? source : sourceOrder.IsHostOrder() ? source : source.Reverse();
         }
 
         /// <summary>

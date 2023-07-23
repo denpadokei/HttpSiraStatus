@@ -563,8 +563,8 @@ namespace HttpSiraStatus.WebSockets.Net
 
         private static bool isAlphabet(char c)
         {
-            return c >= 'A' && c <= 'Z'
-                   || c >= 'a' && c <= 'z';
+            return (c >= 'A' && c <= 'Z')
+                   || (c >= 'a' && c <= 'z');
         }
 
         private static bool isNumeric(char c)
@@ -967,13 +967,11 @@ namespace HttpSiraStatus.WebSockets.Net
             }
 
             var len = bytes.Length;
-            if (len == 0) {
-                return offset != 0
+            return len == 0
+                ? offset != 0
                     ? throw new ArgumentOutOfRangeException("offset")
-                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : string.Empty;
-            }
-
-            return offset < 0 || offset >= len
+                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : string.Empty
+                : offset < 0 || offset >= len
                 ? throw new ArgumentOutOfRangeException("offset")
                 : count < 0 || count > len - offset
                 ? throw new ArgumentOutOfRangeException("count")
@@ -1017,13 +1015,11 @@ namespace HttpSiraStatus.WebSockets.Net
             }
 
             var len = bytes.Length;
-            if (len == 0) {
-                return offset != 0
+            return len == 0
+                ? offset != 0
                     ? throw new ArgumentOutOfRangeException("offset")
-                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : bytes;
-            }
-
-            return offset < 0 || offset >= len
+                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : bytes
+                : offset < 0 || offset >= len
                 ? throw new ArgumentOutOfRangeException("offset")
                 : count < 0 || count > len - offset
                 ? throw new ArgumentOutOfRangeException("count")
@@ -1075,13 +1071,11 @@ namespace HttpSiraStatus.WebSockets.Net
             }
 
             var len = bytes.Length;
-            if (len == 0) {
-                return offset != 0
+            return len == 0
+                ? offset != 0
                     ? throw new ArgumentOutOfRangeException("offset")
-                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : string.Empty;
-            }
-
-            return offset < 0 || offset >= len
+                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : string.Empty
+                : offset < 0 || offset >= len
                 ? throw new ArgumentOutOfRangeException("offset")
                 : count < 0 || count > len - offset
                 ? throw new ArgumentOutOfRangeException("count")
@@ -1128,13 +1122,11 @@ namespace HttpSiraStatus.WebSockets.Net
             }
 
             var len = bytes.Length;
-            if (len == 0) {
-                return offset != 0
+            return len == 0
+                ? offset != 0
                     ? throw new ArgumentOutOfRangeException("offset")
-                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : bytes;
-            }
-
-            return offset < 0 || offset >= len
+                    : count != 0 ? throw new ArgumentOutOfRangeException("count") : bytes
+                : offset < 0 || offset >= len
                 ? throw new ArgumentOutOfRangeException("offset")
                 : count < 0 || count > len - offset
                 ? throw new ArgumentOutOfRangeException("count")

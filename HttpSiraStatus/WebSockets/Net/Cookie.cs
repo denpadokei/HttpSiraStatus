@@ -881,12 +881,9 @@ namespace HttpSiraStatus.WebSockets.Net
 
             _ = buff.AppendFormat("$Version={0}; {1}={2}", this._version, this._name, this._value);
 
-            if (!this._path.IsNullOrEmpty()) {
-                _ = buff.AppendFormat("; $Path={0}", this._path);
-            }
-            else {
-                _ = uri != null ? buff.AppendFormat("; $Path={0}", uri.GetAbsolutePath()) : buff.Append("; $Path=/");
-            }
+            _ = !this._path.IsNullOrEmpty()
+                ? buff.AppendFormat("; $Path={0}", this._path)
+                : uri != null ? buff.AppendFormat("; $Path={0}", uri.GetAbsolutePath()) : buff.Append("; $Path=/");
 
             if (!this._domain.IsNullOrEmpty()) {
                 if (uri == null || uri.Host != this._domain) {
