@@ -8,6 +8,7 @@ namespace HttpSiraStatus.Configuration
     {
         public virtual int Port { get; set; } = 6557;
         public virtual bool SendBeatmapEvents { get; set; } = true;
+        public virtual bool AsyncSetupMapInformation { get; set; } = true;
         /// <summary>
         /// This is called whenever BSIPA reads the config from disk (including when file changes are detected).
         /// </summary>

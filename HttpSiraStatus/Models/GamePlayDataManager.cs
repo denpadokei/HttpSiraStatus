@@ -631,84 +631,53 @@ namespace HttpSiraStatus.Models
             this._noteToIdMapping.Clear();
 
             this._lastNoteId = 0;
-            var beatmapData = await diff.GetBeatmapDataBasicInfoAsync().ConfigureAwait(true);
-            foreach (var note in this._beatmapData.allBeatmapDataItems.Where(x => x is NoteData || x is SliderData).OrderBy(x => x.time).Select((x, i) => (x, i))) {
-                if (note.x is NoteData noteData) {
-                    if (!this._noteToIdMapping.TryAdd(new NoteDataEntity(noteData, this._gameplayModifiers.noArrows), note.i)) {
-                        Plugin.Logger.Warn($"Dupulicate NoteData. Can't create NoteDataEntity. noteID{note.i}");
-                        Plugin.Logger.Warn($"{note.x}");
-                    }
-                }
-                else if (note.x is SliderData sliderData) {
-                    if (!this._noteToIdMapping.TryAdd(new SliderDataEntity(sliderData), note.i)) {
-                        Plugin.Logger.Warn($"Dupulicate SliderData. Can't create SliderDataEntity. noteID{note.i}");
-                        Plugin.Logger.Warn($"{note.x}");
-                    }
-                }
-            }
-#if DEBUG
-            var sw = new Stopwatch();
-            sw.Start();
             var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
-            var bedArray = this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>().ToArray();
-            Plugin.Logger.Debug($"time:{sw.ElapsedMilliseconds}ms");
-            if (this._config.SendBeatmapEvents) {
-                foreach (var beatmapEvent in bedArray) {
-                    IBeatmapEventInformation info;
-                    switch (beatmapEvent) {
-                        case BasicBeatmapEventData basic:
-                            // V2 map
-                            info = new V2BeatmapEventInfomation();
-                            info.Init(basic);
-                            break;
-                        case BPMChangeBeatmapEventData bpm:
-                        case ColorBoostBeatmapEventData color:
-                        case LightColorBeatmapEventData lightColor:
-                        case LightRotationBeatmapEventData lightRotation:
-                        case SpawnRotationBeatmapEventData spawn:
-                        default:
-                            info = new V3BeatmapEventInfomation();
-                            info.Init(beatmapEvent);
-                            break;
+            void __SetupMapping()
+            {
+                foreach (var note in this._beatmapData.allBeatmapDataItems.OrderBy(x => x.time).Select((x, i) => (x, i))) {
+                    if (note.x is NoteData noteData) {
+                        if (!this._noteToIdMapping.TryAdd(new NoteDataEntity(noteData, this._gameplayModifiers.noArrows), note.i)) {
+                            Plugin.Logger.Warn($"Dupulicate NoteData. Can't create NoteDataEntity. noteID{note.i}");
+                            Plugin.Logger.Warn($"{note.x}");
+                        }
                     }
-                    if (!eventDic.ContainsKey(beatmapEvent)) {
-                        eventDic.Add(beatmapEvent, info);
+                    else if (note.x is SliderData sliderData) {
+                        if (!this._noteToIdMapping.TryAdd(new SliderDataEntity(sliderData), note.i)) {
+                            Plugin.Logger.Warn($"Dupulicate SliderData. Can't create SliderDataEntity. noteID{note.i}");
+                            Plugin.Logger.Warn($"{note.x}");
+                        }
                     }
-                }
-            }
-            Plugin.Logger.Debug($"time:{sw.ElapsedMilliseconds}ms");
-            this._eventToEventInfoMapping = new(eventDic);
-            sw.Stop();
-            Plugin.Logger.Debug($"count:{bedArray.Length}, time:{sw.ElapsedMilliseconds}ms");
-#else
-            var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
-            if (this._config.SendBeatmapEvents) {
-                foreach (var beatmapEvent in this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>()) {
-                    IBeatmapEventInformation info;
-                    switch (beatmapEvent) {
-                        case BasicBeatmapEventData basic:
-                            // V2 map
-                            info = new V2BeatmapEventInfomation();
-                            info.Init(basic);
-                            break;
-                        case BPMChangeBeatmapEventData bpm:
-                        case ColorBoostBeatmapEventData color:
-                        case LightColorBeatmapEventData lightColor:
-                        case LightRotationBeatmapEventData lightRotation:
-                        case SpawnRotationBeatmapEventData spawn:
-                        default:
-                            info = new V3BeatmapEventInfomation();
-                            info.Init(beatmapEvent);
-                            break;
-                    }
-                    if (!eventDic.ContainsKey(beatmapEvent)) {
-                        eventDic.Add(beatmapEvent, info);
+                    else if (this._config.SendBeatmapEvents && note.x is BeatmapEventData beatmapEvent) {
+                        IBeatmapEventInformation info;
+                        switch (beatmapEvent) {
+                            case BasicBeatmapEventData basic:
+                                // V2 map
+                                info = new V2BeatmapEventInfomation();
+                                info.Init(basic);
+                                break;
+                            case BPMChangeBeatmapEventData bpm:
+                            case ColorBoostBeatmapEventData color:
+                            case LightColorBeatmapEventData lightColor:
+                            case LightRotationBeatmapEventData lightRotation:
+                            case SpawnRotationBeatmapEventData spawn:
+                            default:
+                                info = new V3BeatmapEventInfomation();
+                                info.Init(beatmapEvent);
+                                break;
+                        }
+                        if (!eventDic.ContainsKey(beatmapEvent)) {
+                            eventDic.Add(beatmapEvent, info);
+                        }
                     }
                 }
+                this._eventToEventInfoMapping = new(eventDic);
             }
-            this._eventToEventInfoMapping = new(eventDic);
-#endif
-
+            if (this._config.AsyncSetupMapInformation) {
+                _ = Task.Run(__SetupMapping, token).ConfigureAwait(true);
+            }
+            else {
+                __SetupMapping();
+            }
             this._gameStatus.songName = level.songName;
             this._gameStatus.songSubName = level.songSubName;
             this._gameStatus.songAuthorName = level.songAuthorName;
@@ -730,6 +699,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.difficulty = diff.difficulty.Name();
             this._gameStatus.difficultyEnum = Enum.GetName(typeof(BeatmapDifficulty), diff.difficulty);
             this._gameStatus.characteristic = diff.parentDifficultyBeatmapSet.beatmapCharacteristic.serializedName;
+            var beatmapData = await diff.GetBeatmapDataBasicInfoAsync().ConfigureAwait(true);
             this._gameStatus.notesCount = beatmapData.cuttableNotesCount;
             this._gameStatus.bombsCount = beatmapData.bombsCount;
             this._gameStatus.obstaclesCount = beatmapData.obstaclesCount;
