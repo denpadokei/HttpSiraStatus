@@ -21,7 +21,7 @@ namespace HttpSiraStatus.Models
             this.InitialScore = this.cutScore;
         }
 
-        protected override void Reinitialize()
+        public override void Reinitialize()
         {
             base.Reinitialize();
             this.InitialScore = -1;

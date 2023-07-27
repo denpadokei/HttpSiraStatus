@@ -1,5 +1,6 @@
 ﻿using HttpSiraStatus.Configuration;
 using HttpSiraStatus.Enums;
+using HttpSiraStatus.Extentions;
 using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
 using IPA.Utilities;
@@ -290,7 +291,7 @@ namespace HttpSiraStatus.Models
                 notecut.wasCutTooSoon = noteCutInfo.wasCutTooSoon;
                 notecut.saberSpeed = noteCutInfo.saberSpeed;
                 notecut.saberDir = saberDir;
-                var rating = noteCutInfo.saberMovementData?.ComputeSwingRating();
+                var rating = noteCutInfo.saberMovementData?.ComputeSwingRatingEx();
                 notecut.swingRating = noteCutInfo.saberMovementData == null ? -1 : rating.Value;
                 notecut.saberType = noteCutInfo.saberType.ToString();
                 notecut.timeDeviation = noteCutInfo.timeDeviation;
