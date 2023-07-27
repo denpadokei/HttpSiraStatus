@@ -15,7 +15,7 @@
     <LocalRefsDir Condition="Exists('..\Refs')">..\Refs</LocalRefsDir>
     <BeatSaberDir>$(LocalRefsDir)</BeatSaberDir>
     <ErrorReport>prompt</ErrorReport>
-    <Version>9.0.3</Version>
+    <Version>9.0.4</Version>
     <WarningLevel>4</WarningLevel>
     <AssemblySearchPaths>$(ReferencePath)</AssemblySearchPaths>
   </PropertyGroup>
@@ -70,6 +70,7 @@
     <Reference Include="Main">
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Main.dll</HintPath>
       <Private>False</Private>
+      <Publicize>True</Publicize>
     </Reference>
     <Reference Include="HMLib">
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\HMLib.dll</HintPath>
@@ -151,6 +152,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
   </ItemGroup>
   <!--<Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />-->
 </Project>
