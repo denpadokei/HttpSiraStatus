@@ -28,8 +28,9 @@ Use this path to connect to the WebSocket. The WebSocket will send the [hello ev
 
 ### Event object
 
-```js
-EventObject = {
+* EventObject
+```json
+{
 	"event": String, // See [Events](#events)
 	"time": Integer, // UNIX timestamp in milliseconds of the moment this event happened
 	"status": Object, // See [Status object](#status-object). May be partial, depending on the event type.
@@ -38,8 +39,9 @@ EventObject = {
 
 ### Status object
 
-```js
-StatusObject = {
+* StatusObject
+```json
+{
 	"game": {
 		"pluginVersion": String, // Currently running version of the plugin
 		"gameVersion": String, // Version of the game the current plugin version is targetting
@@ -145,8 +147,9 @@ Each note cut has a **cut plane**, which is a plane defined by three points of t
 
 In **note space**, positive X, positive Y, and positive Z represent right, up, and forward respectively. The arrow of a directional note is always located at positive Y and pointing towards negative Y. The space origin is the center of the note.
 
-```js
-NoteCutObject = {
+* NoteCutObject
+```json
+ {
 	"noteID": Integer, // ID of the note
 	"noteType": "NoteA" | "NoteB" | "Bomb", // Type of note
 	"noteCutDirection": "Up" | "Down" | "Left" | "Right" | "UpLeft" | "UpRight" | "DownLeft" | "DownRight" | "Any" | "None", // Direction the note is supposed to be cut in
@@ -191,10 +194,70 @@ An explanation of the beatmap events system can be found here: <https://bsmg.wik
 
 Meanings of the different integer values can be derived from here: <https://github.com/Caeden117/ChroMapper/blob/master/Assets/__Scripts/Map/Events/MapEvent.cs>
 
-```js
-BeatmapEvent = {
-	"type": Integer,
+* BeatmapEvent
+
+* V2 MapEvent
+```json
+{
 	"value": Integer,
+	"floatValue": Number,
+	"version": String, // "2.6.0" only
+	"executionOrder": Integer,
+	"time": Number,
+	"type": Interger,
+	"previousSameTypeEventData": {
+		"time": Number,
+		"executionOrder": Integer,
+		"value": Integer,
+		"version": String,
+		"type": Integer,
+		"floatValue": Number
+	},
+	"nextSameTypeEventData": {
+		"time": Number,
+		"executionOrder": Integer,
+		"value": Integer,
+		"version": String,
+		"type": Integer,
+		"floatValue": Number
+	}
+}
+```
+
+
+* V3 MapEvent
+```json
+{
+	"version": String, // "3.0.0" only
+	"boostColorsAreOn": Boolean,
+	"executionOrder": Integer,
+	"time": Number,
+	"type": Integer,
+	"previousSameTypeEventData": {
+		"time": Number,
+		"executionOrder": Integer,
+		"version": String,
+		"type": Integer
+	},
+	"nextSameTypeEventData": {
+		"time": Number,
+		"executionOrder": Integer,
+		"version": String,
+		"boostColorsAreOn": Boolean,
+		"type": Integer
+	}
+}
+```
+V3 EventmapType values
+``` csharp
+public enum V3BeatmapEventType
+{
+    Unknown = 0,
+    BPM = 1,
+    ColorBoost = 2,
+    LightColor = 3,
+    LightRotation = 4,
+    SpawnRotation = 5
 }
 ```
 
