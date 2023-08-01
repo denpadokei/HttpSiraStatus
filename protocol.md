@@ -194,9 +194,8 @@ An explanation of the beatmap events system can be found here: <https://bsmg.wik
 
 Meanings of the different integer values can be derived from here: <https://github.com/Caeden117/ChroMapper/blob/master/Assets/__Scripts/Map/Events/MapEvent.cs>
 
-* BeatmapEvent
 
-* V2 MapEvent
+* V2 BeatmapEvent
 ```js
 {
 	"value": Integer,
@@ -225,7 +224,7 @@ Meanings of the different integer values can be derived from here: <https://gith
 ```
 
 
-* V3 MapEvent
+* V3 BeatmapEvent
 ```js
 {
 	"version": String, // "3.0.0" only
