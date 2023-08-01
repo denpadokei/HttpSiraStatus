@@ -29,7 +29,7 @@ Use this path to connect to the WebSocket. The WebSocket will send the [hello ev
 ### Event object
 
 * EventObject
-```json
+```js
 {
 	"event": String, // See [Events](#events)
 	"time": Integer, // UNIX timestamp in milliseconds of the moment this event happened
@@ -40,7 +40,7 @@ Use this path to connect to the WebSocket. The WebSocket will send the [hello ev
 ### Status object
 
 * StatusObject
-```json
+```js
 {
 	"game": {
 		"pluginVersion": String, // Currently running version of the plugin
@@ -148,7 +148,7 @@ Each note cut has a **cut plane**, which is a plane defined by three points of t
 In **note space**, positive X, positive Y, and positive Z represent right, up, and forward respectively. The arrow of a directional note is always located at positive Y and pointing towards negative Y. The space origin is the center of the note.
 
 * NoteCutObject
-```json
+```js
  {
 	"noteID": Integer, // ID of the note
 	"noteType": "NoteA" | "NoteB" | "Bomb", // Type of note
@@ -197,7 +197,7 @@ Meanings of the different integer values can be derived from here: <https://gith
 * BeatmapEvent
 
 * V2 MapEvent
-```json
+```js
 {
 	"value": Integer,
 	"floatValue": Number,
@@ -226,7 +226,7 @@ Meanings of the different integer values can be derived from here: <https://gith
 
 
 * V3 MapEvent
-```json
+```js
 {
 	"version": String, // "3.0.0" only
 	"boostColorsAreOn": Boolean,
