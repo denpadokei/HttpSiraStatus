@@ -1,7 +1,7 @@
 ﻿using HttpSiraStatus.Interfaces;
 using HttpSiraStatus.Util;
-using WebSocketSharp;
-using WebSocketSharp.Server;
+using HttpSiraStatus.WebSockets;
+using HttpSiraStatus.WebSockets.Server;
 
 namespace HttpSiraStatus.Models
 {
