@@ -1,9 +1,7 @@
 ﻿using HarmonyLib;
 using IPA.Loader;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 namespace HttpSiraStatus.HarmonyPatches
@@ -11,9 +9,10 @@ namespace HttpSiraStatus.HarmonyPatches
     [HarmonyPatch]
     internal class GottaGoFastConfigPatch
     {
-        public const float s_default_Transition = 0.7f;
 
-        public const string s_targetMethodName = "get_SongStartTransition";
+        public const bool s_enableOptimizations = false;
+
+        public const string s_targetMethodName = "__IsEnabled";
 
         /// <summary>
         /// パッチを当てるかどうか
@@ -21,30 +20,27 @@ namespace HttpSiraStatus.HarmonyPatches
         /// <param name="original"></param>
         /// <returns></returns>
         [HarmonyPrepare]
-        public static bool SetMultipliersPrefixPrepare(IEnumerable<MethodBase> original)
+        public static bool SetMultipliersPrefixPrepare(MethodBase original)
         {
-            return SetMultipliersPrefixMethod(original).Any();
+            return SetMultipliersPrefixMethod(original) != null;
         }
 
         /// <summary>
-        /// AccCampaignScoreSubmission.dllから対象のメソッド情報を取得します。
+        /// Gotta Go Fastから対象のメソッド情報を取得します。
         /// </summary>
         /// <param name="original"></param>
         /// <returns></returns>
-        [HarmonyTargetMethods]
-        public static IEnumerable<MethodBase> SetMultipliersPrefixMethod(IEnumerable<MethodBase> original)
+        [HarmonyTargetMethod]
+        public static MethodBase SetMultipliersPrefixMethod(MethodBase original)
         {
-            if (original != null && original.OfType<MethodBase>().Any()) {
-                foreach (var method in original.OfType<MethodBase>()) {
-                    yield return method;
-                }
-                yield break;
+            if (original != null) {
+                return original;
             }
             var gottaGoFastInfo = PluginManager.GetPlugin("Gotta Go Fast");
             var customPlatformsInfo = PluginManager.GetPlugin("Custom Platforms");
             if (gottaGoFastInfo == null || customPlatformsInfo == null) {
                 Plugin.Logger.Info("Gotta Go Fast not loaded.");
-                yield break;
+                return null;
             }
             var gottaGoFastPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "GottaGoFast.dll");
             Assembly gottaGoFastAssembly;
@@ -53,43 +49,34 @@ namespace HttpSiraStatus.HarmonyPatches
             }
             catch (FileNotFoundException) {
                 Plugin.Logger.Info("GottaGoFast failed load");
-                yield break;
+                return null;
             }
             catch (Exception e) {
                 Plugin.Logger.Error(e);
-                yield break;
+                return null;
             }
-            var pluginConfig = gottaGoFastAssembly.GetType("GottaGoFast.Configuration.PluginConfig");
-            
-            if (pluginConfig != null) {
-                var props = pluginConfig.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                foreach (var property in props) {
-                    var getter = property.GetGetMethod(true);
-                    if (IsTarget(getter)) {
-                        Plugin.Logger.Info($"{pluginConfig}");
-                        Plugin.Logger.Info($"{getter}");
-                        yield return getter;
-                    }
-                }
-                yield break;
+            var patchGameScenesManagerConfig = gottaGoFastAssembly.GetType("GottaGoFast.HarmonyPatches.PatchGameScenesManager");
+
+            if (patchGameScenesManagerConfig != null) {
+                var method = patchGameScenesManagerConfig.GetMethod(s_targetMethodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                Plugin.Logger.Info($"{patchGameScenesManagerConfig}");
+                Plugin.Logger.Info($"{method?.Name}");
+                return method;
             }
             else {
                 Plugin.Logger.Info("Not found target method.");
-                yield break;
+                return null;
             }
         }
 
-        private static bool IsTarget(MethodInfo getter)
-        {
-            return getter != null && getter.Name == s_targetMethodName;
-        }
-
+        /// <summary>
+        /// 独自処理を無効化する
+        /// </summary>
+        /// <param name="__result"></param>
         [HarmonyPostfix]
-        public static void SetMultipliersPrefix(ref float __result)
+        public static void HarmonyPostfix(ref bool __result)
         {
-            if (__result < s_default_Transition) {
-                __result = s_default_Transition;
-            }
+            __result = s_enableOptimizations;
         }
     }
 }

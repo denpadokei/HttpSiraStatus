@@ -8,7 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HttpSiraStatus</RootNamespace>
     <AssemblyName>HttpSiraStatus</AssemblyName>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>

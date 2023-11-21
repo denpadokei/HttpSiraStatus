@@ -6,10 +6,10 @@ namespace HttpSiraStatus.Installer
     {
         public override void InstallBindings()
         {
-            this.Container.BindMemoryPool<CutScoreInfoEntity, CutScoreInfoEntity.Pool>().WithInitialSize(16);
-            this.Container.BindInterfacesAndSelfTo<GameStatus>().AsSingle();
-            this.Container.BindInterfacesAndSelfTo<StatusManager>().AsSingle();
-            this.Container.BindInterfacesAndSelfTo<HTTPServer>().AsSingle();
+            _ = this.Container.BindMemoryPool<CutScoreInfoEntity, CutScoreInfoEntity.Pool>().WithInitialSize(16);
+            _ = this.Container.BindInterfacesAndSelfTo<GameStatus>().AsSingle();
+            _ = this.Container.BindInterfacesAndSelfTo<StatusManager>().AsSingle();
+            _ = this.Container.BindInterfacesAndSelfTo<HTTPServer>().AsSingle();
         }
     }
 }
