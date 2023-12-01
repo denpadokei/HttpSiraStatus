@@ -15,7 +15,7 @@
     <LocalRefsDir Condition="Exists('..\Refs')">..\Refs</LocalRefsDir>
     <BeatSaberDir>$(LocalRefsDir)</BeatSaberDir>
     <ErrorReport>prompt</ErrorReport>
-    <Version>9.1.1</Version>
+    <Version>10.0.2</Version>
     <WarningLevel>4</WarningLevel>
     <AssemblySearchPaths>$(ReferencePath)</AssemblySearchPaths>
   </PropertyGroup>
@@ -88,6 +88,11 @@
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\IPA.Loader.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Tweening">
+      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Tweening.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
@@ -139,7 +144,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="manifest.json" />
-    <OutputCopy Include="$(OutputPath)$(TargetName).dll" OutputPath="Plugins\$(TargetName).dll"></OutputCopy>
+    <OutputCopy Include="$(OutputPath)$(TargetName).dll" OutputPath="Plugins\$(TargetName).dll">
+    </OutputCopy>
   </ItemGroup>
   <ItemGroup>
     <None Include="Directory.Build.props" Condition="Exists('Directory.Build.props')" />
