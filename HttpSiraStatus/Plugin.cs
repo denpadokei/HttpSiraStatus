@@ -37,7 +37,7 @@ namespace HttpSiraStatus
             s_config = config.Generated<PluginConfig>();
             zenjector.Install(Location.App, container =>
             {
-                container.BindInterfacesAndSelfTo<PluginConfig>().FromInstance(s_config);
+                _ = container.BindInterfacesAndSelfTo<PluginConfig>().FromInstance(s_config);
             });
             zenjector.Install<HttpMainInstaller>(Location.Menu);
             zenjector.Install<HttpPlayerInstaller>(Location.Player);

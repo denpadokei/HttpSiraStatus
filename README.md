@@ -19,11 +19,7 @@ Next you will need to [get additional software](https://github.com/opl-/beatsabe
 
 3. Extract the zip into your Beat Saber directory.
 
-4. Download and extract the following plugins and their dependencies:
-
-	- websocket-sharp from [BeatMods](https://beatmods.com/#/mods)
-
-5. [Get additional software](https://github.com/opl-/beatsaber-http-status/wiki/Software-using-this-plugin) that makes use of this plugin. This mod does nothing on its own; it simply exposes information for other programs to use.
+4. [Get additional software](https://github.com/opl-/beatsaber-http-status/wiki/Software-using-this-plugin) that makes use of this plugin. This mod does nothing on its own; it simply exposes information for other programs to use.
 
 
 ## Developers

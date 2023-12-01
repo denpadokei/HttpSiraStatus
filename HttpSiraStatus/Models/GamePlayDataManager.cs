@@ -27,7 +27,7 @@ namespace HttpSiraStatus.Models
     {
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*
         #region // パブリックメソッド
-        [AffinityPatch(typeof(ScoreController), nameof(ScoreController.HandleNoteWasCut))]
+        [AffinityPatch(typeof(ScoreController), "HandleNoteWasCut")]
         [AffinityPostfix]
         public void NoteWasCutPostfix(NoteController noteController, in NoteCutInfo noteCutInfo)
         {
@@ -49,18 +49,18 @@ namespace HttpSiraStatus.Models
                 goodCutScoringElement.Init(noteCutInfo, noteController, this._gameplayModifiers.noArrows);
                 this._sortedScoringElementsWithoutMultiplier.InsertIntoSortedListFromEnd(goodCutScoringElement);
                 this.ScoreController_scoringForNoteStartedEvent(goodCutScoringElement, noteController.noteData.colorType);
-                this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
+                _ = this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
             }
             else {
                 var badCutScoringElement = this._badCutScoringElementPool.Spawn();
                 badCutScoringElement.Init(noteCutInfo, noteController, this._gameplayModifiers.noArrows);
                 this._sortedScoringElementsWithoutMultiplier.InsertIntoSortedListFromEnd(badCutScoringElement);
                 this.ScoreController_scoringForNoteStartedEvent(badCutScoringElement, noteController.noteData.colorType);
-                this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
+                _ = this._sortedNoteTimesWithoutScoringElements.Remove(noteCutInfo.noteData.time);
             }
         }
 
-        [AffinityPatch(typeof(ScoreController), nameof(ScoreController.HandleNoteWasMissed))]
+        [AffinityPatch(typeof(ScoreController), "HandleNoteWasMissed")]
         [AffinityPostfix]
         public void NoteWasMissedPostfix(NoteController noteController)
         {
@@ -79,7 +79,7 @@ namespace HttpSiraStatus.Models
             missScoringElement.Init(noteData);
             this._sortedScoringElementsWithoutMultiplier.InsertIntoSortedListFromEnd(missScoringElement);
             this.ScoreController_scoringForNoteStartedEvent(missScoringElement, noteController.noteData.colorType);
-            this._sortedNoteTimesWithoutScoringElements.Remove(noteData.time);
+            _ = this._sortedNoteTimesWithoutScoringElements.Remove(noteData.time);
         }
         #endregion
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*
@@ -139,15 +139,6 @@ namespace HttpSiraStatus.Models
             }
         }
 
-        private void UpdateCurrentSongTime()
-        {
-            var songTime = Mathf.FloorToInt(this._audioTimeSource.songTime);
-            if (this._gameStatus.currentSongTime != songTime) {
-                this._gameStatus.currentSongTime = songTime;
-                this._statusManager.EmitStatusUpdate(ChangedProperty.Performance, BeatSaberEvent.BeatmapEvent);
-            }
-        }
-
         private void UpdateModMultiplier()
         {
             var energy = this._gameEnergyCounter.energy;
@@ -177,12 +168,12 @@ namespace HttpSiraStatus.Models
             if (obj.noteData.scoringType != NoteData.ScoringType.Ignore) {
                 this._sortedNoteTimesWithoutScoringElements.InsertIntoSortedListFromEnd(obj.noteData.time);
             }
-            this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteSpawned);
+            _ = this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteSpawned);
         }
 
         private void OnBeatmapObjectManager_sliderWasSpawnedEvent(SliderController obj)
         {
-            this.SetNoteCutStatus(obj.sliderData, BeatSaberEvent.NoteSpawned);
+            _ = this.SetNoteCutStatus(obj.sliderData, BeatSaberEvent.NoteSpawned);
         }
         private void ScoreController_scoringForNoteStartedEvent(ScoringElement obj, ColorType colorType)
         {
@@ -198,7 +189,7 @@ namespace HttpSiraStatus.Models
                 notecut.afterCutScore = cutScoreBuffer.afterCutScore;
             }
             else if (obj is MissScoringElement && colorType != ColorType.None) {
-                this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteMissed);
+                _ = this.SetNoteCutStatus(obj.noteData, BeatSaberEvent.NoteMissed);
                 this._statusManager.EmitStatusUpdate(ChangedProperty.PerformanceAndNoteCut, BeatSaberEvent.NoteMissed);
             }
             else if (obj is CustomBadCutScoringElement badElement) {
@@ -403,12 +394,11 @@ namespace HttpSiraStatus.Models
         private ILevelEndActions _levelEndActions;
         private GameplayModifiersModelSO _gameplayModifiersSO;
         private bool _headInObstacle = false;
-        private Thread _thread;
         private int _lastNoteId = 0;
         private bool _disposedValue;
         private BeatmapDataCallbackWrapper _eventDataCallbackWrapper;
         private IReadonlyBeatmapData _beatmapData;
-        private List<GameplayModifierParamsSO> _gameplayModifierParams;
+        //private List<GameplayModifierParamsSO> _gameplayModifierParams;
         private readonly List<ScoringElement> _sortedScoringElementsWithoutMultiplier = new List<ScoringElement>(50);
         private readonly List<ScoringElement> _scoringElementsWithMultiplier = new List<ScoringElement>(50);
         private readonly Queue<ScoringElement> _scoringElementsToRemove = new Queue<ScoringElement>(50);
@@ -491,7 +481,7 @@ namespace HttpSiraStatus.Models
             this._beatmapObjectManager = beatmapObjectManager;
             this._comboController = comboController;
             this._beatmapData = readonlyBeatmapData;
-            this._config= config;
+            this._config = config;
             if (this._scoreController is ScoreController scoreController) {
                 this._gameplayModifiersSO = scoreController.GetField<GameplayModifiersModelSO, ScoreController>("_gameplayModifiersModel");
             }
@@ -542,10 +532,7 @@ namespace HttpSiraStatus.Models
                             this._levelEndActions.levelFailedEvent -= this.OnLevelFailed;
                         }
 
-                        if (this._beatmapObjectCallbackController != null) {
-                            this._beatmapObjectCallbackController.RemoveBeatmapCallback(this._eventDataCallbackWrapper);
-                            //this.beatmapObjectCallbackController.beatmapEventDidTriggerEvent -= this.OnBeatmapEventDidTrigger;
-                        }
+                        this._beatmapObjectCallbackController?.RemoveBeatmapCallback(this._eventDataCallbackWrapper);
 
                         if (this._beatmapObjectManager != null) {
                             this._beatmapObjectManager.noteWasSpawnedEvent -= this.OnNoteWasSpawnedEvent;
@@ -631,88 +618,6 @@ namespace HttpSiraStatus.Models
             if (practiceSettings != null) {
                 songSpeedMul = practiceSettings.songSpeedMul;
             }
-            // Generate NoteData to id mappings for backwards compatiblity with <1.12.1
-            this._noteToIdMapping.Clear();
-
-            this._lastNoteId = 0;
-            var beatmapData = await diff.GetBeatmapDataBasicInfoAsync().ConfigureAwait(true);
-            foreach (var note in this._beatmapData.allBeatmapDataItems.Where(x => x is NoteData || x is SliderData).OrderBy(x => x.time).Select((x, i) => (x, i))) {
-                if (note.x is NoteData noteData) {
-                    if (!this._noteToIdMapping.TryAdd(new NoteDataEntity(noteData, this._gameplayModifiers.noArrows), note.i)) {
-                        Plugin.Logger.Warn($"Dupulicate NoteData. Can't create NoteDataEntity. noteID{note.i}");
-                        Plugin.Logger.Warn($"{note.x}");
-                    }
-                }
-                else if (note.x is SliderData sliderData) {
-                    if (!this._noteToIdMapping.TryAdd(new SliderDataEntity(sliderData), note.i)) {
-                        Plugin.Logger.Warn($"Dupulicate SliderData. Can't create SliderDataEntity. noteID{note.i}");
-                        Plugin.Logger.Warn($"{note.x}");
-                    }
-                }
-            }
-#if DEBUG
-            var sw = new Stopwatch();
-            sw.Start();
-            var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
-            var bedArray = this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>().ToArray();
-            Plugin.Logger.Debug($"time:{sw.ElapsedMilliseconds}ms");
-            if (this._config.SendBeatmapEvents) {
-                foreach (var beatmapEvent in bedArray) {
-                    IBeatmapEventInformation info;
-                    switch (beatmapEvent) {
-                        case BasicBeatmapEventData basic:
-                            // V2 map
-                            info = new V2BeatmapEventInfomation();
-                            info.Init(basic);
-                            break;
-                        case BPMChangeBeatmapEventData bpm:
-                        case ColorBoostBeatmapEventData color:
-                        case LightColorBeatmapEventData lightColor:
-                        case LightRotationBeatmapEventData lightRotation:
-                        case SpawnRotationBeatmapEventData spawn:
-                        default:
-                            info = new V3BeatmapEventInfomation();
-                            info.Init(beatmapEvent);
-                            break;
-                    }
-                    if (!eventDic.ContainsKey(beatmapEvent)) {
-                        eventDic.Add(beatmapEvent, info);
-                    }
-                }
-            }
-            Plugin.Logger.Debug($"time:{sw.ElapsedMilliseconds}ms");
-            this._eventToEventInfoMapping = new(eventDic);
-            sw.Stop();
-            Plugin.Logger.Debug($"count:{bedArray.Length}, time:{sw.ElapsedMilliseconds}ms");
-#else
-            var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
-            if (this._config.SendBeatmapEvents) {
-                foreach (var beatmapEvent in this._beatmapData.allBeatmapDataItems.OfType<BeatmapEventData>()) {
-                    IBeatmapEventInformation info;
-                    switch (beatmapEvent) {
-                        case BasicBeatmapEventData basic:
-                            // V2 map
-                            info = new V2BeatmapEventInfomation();
-                            info.Init(basic);
-                            break;
-                        case BPMChangeBeatmapEventData bpm:
-                        case ColorBoostBeatmapEventData color:
-                        case LightColorBeatmapEventData lightColor:
-                        case LightRotationBeatmapEventData lightRotation:
-                        case SpawnRotationBeatmapEventData spawn:
-                        default:
-                            info = new V3BeatmapEventInfomation();
-                            info.Init(beatmapEvent);
-                            break;
-                    }
-                    if (!eventDic.ContainsKey(beatmapEvent)) {
-                        eventDic.Add(beatmapEvent, info);
-                    }
-                }
-            }
-            this._eventToEventInfoMapping = new(eventDic);
-#endif
-
             this._gameStatus.songName = level.songName;
             this._gameStatus.songSubName = level.songSubName;
             this._gameStatus.songAuthorName = level.songAuthorName;
@@ -734,6 +639,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.difficulty = diff.difficulty.Name();
             this._gameStatus.difficultyEnum = Enum.GetName(typeof(BeatmapDifficulty), diff.difficulty);
             this._gameStatus.characteristic = diff.parentDifficultyBeatmapSet.beatmapCharacteristic.serializedName;
+            var beatmapData = await diff.GetBeatmapDataBasicInfoAsync().ConfigureAwait(true);
             this._gameStatus.notesCount = beatmapData.cuttableNotesCount;
             this._gameStatus.bombsCount = beatmapData.bombsCount;
             this._gameStatus.obstaclesCount = beatmapData.obstaclesCount;
@@ -750,7 +656,7 @@ namespace HttpSiraStatus.Models
                 this._gameStatus.colorEnvironmentBoostW = colorScheme.environmentColorWBoost;
             }
             this._gameStatus.colorObstacle = colorScheme.obstaclesColor;
-            this._gameplayModifierParams = this._gameplayModifiersSO.CreateModifierParamsList(this._gameplayModifiers);
+            //this._gameplayModifierParams = this._gameplayModifiersSO.CreateModifierParamsList(this._gameplayModifiers);
             try {
                 // From https://support.unity3d.com/hc/en-us/articles/206486626-How-can-I-get-pixels-from-unreadable-textures-
                 // Modified to correctly handle texture atlases. Fixes #82.
@@ -817,28 +723,78 @@ namespace HttpSiraStatus.Models
             this._gameStatus.saberTrailIntensity = playerSettings.saberTrailIntensity;
             this._gameStatus.environmentEffects = (diff.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset).ToString();
             this._gameStatus.hideNoteSpawningEffect = playerSettings.hideNoteSpawnEffect;
-
-            this._thread = new Thread(new ThreadStart(() =>
+            // Generate NoteData to id mappings for backwards compatiblity with <1.12.1
+            this._noteToIdMapping.Clear();
+            this._lastNoteId = 0;
+            void __SetupMapping()
             {
-                while (!this._disposedValue) {
-                    try {
-                        this.UpdateCurrentSongTime();
+                var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
+                var noteIDcount = 0;
+                foreach (var note in this._beatmapData.allBeatmapDataItems.OrderBy(x => x.time)) {
+                    if (token.IsCancellationRequested) {
+                        break;
                     }
-                    catch (Exception e) {
-                        Plugin.Logger.Error(e);
-                    }
-                    finally {
-                        Thread.Sleep(16);
+                    switch (note) {
+                        case NoteData noteData:
+                            if (this._noteToIdMapping.TryAdd(new NoteDataEntity(noteData, this._gameplayModifiers.noArrows), noteIDcount)) {
+                                
+                                noteIDcount++;
+                            }
+                            else {
+                                Plugin.Logger.Warn($"Dupulicate NoteData. Can't create NoteDataEntity. noteID{noteIDcount}");
+                                Plugin.Logger.Warn($"{note}");
+                            }
+                            break;
+                        case SliderData sliderData:
+                            if (this._noteToIdMapping.TryAdd(new SliderDataEntity(sliderData), noteIDcount)) {
+                                noteIDcount++;
+                            }
+                            else {
+                                Plugin.Logger.Warn($"Dupulicate SliderData. Can't create SliderDataEntity. noteID{noteIDcount}");
+                                Plugin.Logger.Warn($"{note}");
+                            }
+                            break;
+                        default:
+                            if (this._config.SendBeatmapEvents && note is BeatmapEventData beatmapEvent) {
+                                IBeatmapEventInformation info;
+                                switch (beatmapEvent) {
+                                    case BasicBeatmapEventData basic:
+                                        // V2 map
+                                        info = new V2BeatmapEventInfomation();
+                                        info.Init(basic);
+                                        break;
+                                    case BPMChangeBeatmapEventData bpm:
+                                    case ColorBoostBeatmapEventData color:
+                                    case LightColorBeatmapEventData lightColor:
+                                    case LightRotationBeatmapEventData lightRotation:
+                                    case SpawnRotationBeatmapEventData spawn:
+                                    default:
+                                        info = new V3BeatmapEventInfomation();
+                                        info.Init(beatmapEvent);
+                                        break;
+                                }
+                                if (!eventDic.ContainsKey(beatmapEvent)) {
+                                    eventDic.Add(beatmapEvent, info);
+                                }
+                            }
+                            break;
                     }
                 }
-            }));
-            this._thread.Start();
-            this._statusManager.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.SongStart);
+                this._eventToEventInfoMapping = new(eventDic);
+            }
+            if (this._config.SendBeatmapEvents && this._config.AsyncSetupMapInformation) {
+                this._statusManager.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.SongStart);
+                _ = Task.Run(__SetupMapping).ConfigureAwait(false);
+            }
+            else {
+                __SetupMapping();
+                this._statusManager.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.SongStart);
+            }
         }
         #endregion
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*
         #region // Unity Method
-        private void Update()
+        protected void Update()
         {
             try {
                 this.OnObstacleInteraction();
@@ -846,9 +802,14 @@ namespace HttpSiraStatus.Models
             catch (Exception e) {
                 Plugin.Logger.Error(e);
             }
+            var songTime = Mathf.FloorToInt(this._audioTimeSource.songTime);
+            if (this._gameStatus.currentSongTime != songTime) {
+                this._gameStatus.currentSongTime = songTime;
+                this._statusManager.EmitStatusUpdate(ChangedProperty.Performance, BeatSaberEvent.BeatmapEvent);
+            }
         }
 
-        private void LateUpdate()
+        protected void LateUpdate()
         {
             var lastProcessedElementTime = this._sortedNoteTimesWithoutScoringElements.Any() ? this._sortedNoteTimesWithoutScoringElements[0] : float.MaxValue;
             var limitSongTime = this._audioTimeSource.songTime + 0.15f;
@@ -858,9 +819,9 @@ namespace HttpSiraStatus.Models
                 if (limitSongTime <= scoringElement.time && scoringElement.time <= lastProcessedElementTime) {
                     break;
                 }
-                this._scoreMultiplierCounter.ProcessMultiplierEvent(scoringElement.multiplierEventType);
+                _ = this._scoreMultiplierCounter.ProcessMultiplierEvent(scoringElement.multiplierEventType);
                 if (scoringElement.wouldBeCorrectCutBestPossibleMultiplierEventType == ScoreMultiplierCounter.MultiplierEventType.Positive) {
-                    this._maxScoreMultiplierCounter.ProcessMultiplierEvent(ScoreMultiplierCounter.MultiplierEventType.Positive);
+                    _ = this._maxScoreMultiplierCounter.ProcessMultiplierEvent(ScoreMultiplierCounter.MultiplierEventType.Positive);
                 }
                 scoringElement.SetMultipliers(this._scoreMultiplierCounter.multiplier, this._maxScoreMultiplierCounter.multiplier);
                 this._scoringElementsWithMultiplier.Add(scoringElement);
@@ -875,7 +836,7 @@ namespace HttpSiraStatus.Models
             }
             while (this._scoringElementsToRemove.Any()) {
                 var scoringElement3 = this._scoringElementsToRemove.Dequeue();
-                this._scoringElementsWithMultiplier.Remove(scoringElement3);
+                _ = this._scoringElementsWithMultiplier.Remove(scoringElement3);
                 this.DespawnScoringElement(scoringElement3);
             }
         }
