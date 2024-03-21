@@ -31,6 +31,7 @@ namespace HttpSiraStatus.Models
 
         #region LightColor
         public BeatmapEventTransitionType TransitionType { get; private set; }
+        public EaseType EaseType { get; private set; }
         public EnvironmentColorType ColorType { get; private set; }
         public float Brightness { get; private set; }
         public int StrobeBeatFrequency { get; private set; }
@@ -38,7 +39,6 @@ namespace HttpSiraStatus.Models
 
         #region LightRotation
         public bool UsePreviousEventValue { get; private set; }
-        public EaseType EaseType { get; private set; }
         public LightAxis Axis { get; private set; }
         public int LoopCount { get; private set; }
         public LightRotationDirection RotationDirection { get; private set; }
@@ -70,7 +70,7 @@ namespace HttpSiraStatus.Models
                     this.BeatmapEventType = V3BeatmapEventType.LightColor;
                     this.GroupId = lightColor.groupId;
                     this.ElementId = lightColor.elementId;
-                    this.TransitionType = lightColor.transitionType;
+                    this.EaseType = lightColor.easeType;
                     this.ColorType = lightColor.colorType;
                     this.Brightness = lightColor.brightness;
                     this.StrobeBeatFrequency = lightColor.strobeBeatFrequency;

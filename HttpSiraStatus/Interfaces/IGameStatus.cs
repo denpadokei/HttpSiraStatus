@@ -36,6 +36,7 @@ namespace HttpSiraStatus.Interfaces
         bool leftHanded { get; }
         long length { get; }
         string levelAuthorName { get; }
+        string[] levelAuthorNamesArray { get; }
         string levelId { get; }
         int maxCombo { get; }
         string maxRank { get; }

@@ -1,4 +1,5 @@
-﻿using HttpSiraStatus.Configuration;
+﻿using HarmonyLib;
+using HttpSiraStatus.Configuration;
 using HttpSiraStatus.Enums;
 using HttpSiraStatus.Extentions;
 using HttpSiraStatus.Interfaces;
@@ -380,6 +381,8 @@ namespace HttpSiraStatus.Models
         private NoteDataEntity.Pool _notePool;
         private SliderDataEntity.Pool _sliderPool;
         private GameplayCoreSceneSetupData _gameplayCoreSceneSetupData;
+        private BeatmapLevel _beatmapLevel;
+        private BeatmapKey _beatmapKey;
         private PauseController _pauseController;
         private IScoreController _scoreController;
         private IComboController _comboController;
@@ -449,6 +452,8 @@ namespace HttpSiraStatus.Models
             SliderDataEntity.Pool sliderDataEntityPool,
             CutScoreInfoEntity.Pool cutScoreInfoEntityPool,
             GameplayCoreSceneSetupData gameplayCoreSceneSetupData,
+            BeatmapLevel beatmapLevel,
+            BeatmapKey beatmapKey,
             IScoreController score,
             IComboController comboController,
             GameplayModifiers gameplayModifiers,
@@ -471,6 +476,8 @@ namespace HttpSiraStatus.Models
             this._notePool = noteDataEntityPool;
             this._sliderPool = sliderDataEntityPool;
             this._gameplayCoreSceneSetupData = gameplayCoreSceneSetupData;
+            this._beatmapLevel = beatmapLevel;
+            this._beatmapKey = beatmapKey;
             this._scoreController = score;
             this._gameplayModifiers = gameplayModifiers;
             this._audioTimeSource = audioTimeSource;
@@ -607,8 +614,9 @@ namespace HttpSiraStatus.Models
                 this._levelEndActions.levelFinishedEvent += this.OnLevelFinished;
                 this._levelEndActions.levelFailedEvent += this.OnLevelFailed;
             }
-            var diff = this._gameplayCoreSceneSetupData.difficultyBeatmap;
-            var level = diff.level;
+            //var diff = this._gameplayCoreSceneSetupData..difficultyBeatmap;
+            var level = this._gameplayCoreSceneSetupData.beatmapLevel;
+            var beatmapData = level.GetDifficultyBeatmapData(this._beatmapKey.beatmapCharacteristic, this._beatmapKey.difficulty);
 
             this._gameplayModifiers = this._gameplayCoreSceneSetupData.gameplayModifiers;
             var playerSettings = this._gameplayCoreSceneSetupData.playerSpecificSettings;
@@ -621,29 +629,30 @@ namespace HttpSiraStatus.Models
             this._gameStatus.songName = level.songName;
             this._gameStatus.songSubName = level.songSubName;
             this._gameStatus.songAuthorName = level.songAuthorName;
-            this._gameStatus.levelAuthorName = level.levelAuthorName;
+            this._gameStatus.levelAuthorName = string.Join(",", level.allMappers);
+            this._gameStatus.levelAuthorNamesArray = level.allMappers;
             this._gameStatus.songBPM = level.beatsPerMinute;
-            this._gameStatus.noteJumpSpeed = diff.noteJumpMovementSpeed;
-            this._gameStatus.noteJumpStartBeatOffset = diff.noteJumpStartBeatOffset;
+            this._gameStatus.noteJumpSpeed = beatmapData.noteJumpMovementSpeed;
+            this._gameStatus.noteJumpStartBeatOffset = beatmapData.noteJumpStartBeatOffset;
             // 13 is "custom_level_" and 40 is the magic number for the length of the SHA-1 hash
             this._gameStatus.songHash = Regex.IsMatch(level.levelID, "^custom_level_[0-9A-F]{40}", RegexOptions.IgnoreCase) && !level.levelID.EndsWith(" WIP") ? level.levelID.Substring(13, 40) : null;
             this._gameStatus.levelId = level.levelID;
             this._gameStatus.songTimeOffset = (long)(level.songTimeOffset * 1000f / songSpeedMul);
-            this._gameStatus.length = (long)(level.beatmapLevelData.audioClip.length * 1000f / songSpeedMul);
+            this._gameStatus.length = (long)(_gameplayCoreSceneSetupData.songAudioClip.length * 1000f / songSpeedMul);
             this._gameStatus.start = Utility.GetCurrentTime() - (long)(this._audioTimeSource.songTime * 1000f / songSpeedMul);
             if (practiceSettings != null) {
                 this._gameStatus.start -= (long)(practiceSettings.startSongTime * 1000f / songSpeedMul);
             }
 
             this._gameStatus.paused = 0;
-            this._gameStatus.difficulty = diff.difficulty.Name();
-            this._gameStatus.difficultyEnum = Enum.GetName(typeof(BeatmapDifficulty), diff.difficulty);
-            this._gameStatus.characteristic = diff.parentDifficultyBeatmapSet.beatmapCharacteristic.serializedName;
-            var beatmapData = await diff.GetBeatmapDataBasicInfoAsync().ConfigureAwait(true);
-            this._gameStatus.notesCount = beatmapData.cuttableNotesCount;
+            this._gameStatus.difficulty = this._beatmapKey.difficulty.Name();
+            this._gameStatus.difficultyEnum = Enum.GetName(typeof(BeatmapDifficulty), this._beatmapKey.difficulty);
+            this._gameStatus.characteristic = _beatmapKey.beatmapCharacteristic.serializedName;
+            //var beatmapData = await beatmapData.GetBeatmapDataBasicInfoAsync().ConfigureAwait(true);
+            this._gameStatus.notesCount = beatmapData.notesCount;
             this._gameStatus.bombsCount = beatmapData.bombsCount;
             this._gameStatus.obstaclesCount = beatmapData.obstaclesCount;
-            this._gameStatus.environmentName = level.environmentInfo.sceneInfo.sceneName;
+            this._gameStatus.environmentName = beatmapData.environmentName.ToString();
             var colorScheme = this._gameplayCoreSceneSetupData.colorScheme ?? new ColorScheme(this._gameplayCoreSceneSetupData.environmentInfo.colorScheme);
             this._gameStatus.colorSaberA = colorScheme.saberAColor;
             this._gameStatus.colorSaberB = colorScheme.saberBColor;
@@ -661,8 +670,7 @@ namespace HttpSiraStatus.Models
                 // From https://support.unity3d.com/hc/en-us/articles/206486626-How-can-I-get-pixels-from-unreadable-textures-
                 // Modified to correctly handle texture atlases. Fixes #82.
                 var active = RenderTexture.active;
-
-                var sprite = await level.GetCoverImageAsync(CancellationToken.None);
+                var sprite = await level.previewMediaData.GetCoverSpriteAsync(token);
                 var texture = sprite.texture;
                 var temporary = RenderTexture.GetTemporary(texture.width, texture.height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
 
@@ -712,7 +720,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.modProMode = this._gameplayModifiers.proMode;
             this._gameStatus.modZenMode = this._gameplayModifiers.zenMode;
 
-            this._gameStatus.staticLights = (diff.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset) != EnvironmentEffectsFilterPreset.AllEffects;
+            this._gameStatus.staticLights = (this._beatmapKey.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset) != EnvironmentEffectsFilterPreset.AllEffects;
             this._gameStatus.leftHanded = playerSettings.leftHanded;
             this._gameStatus.playerHeight = playerSettings.playerHeight;
             this._gameStatus.sfxVolume = playerSettings.sfxVolume;
@@ -721,7 +729,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.advancedHUD = playerSettings.advancedHud;
             this._gameStatus.autoRestart = playerSettings.autoRestart;
             this._gameStatus.saberTrailIntensity = playerSettings.saberTrailIntensity;
-            this._gameStatus.environmentEffects = (diff.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset).ToString();
+            this._gameStatus.environmentEffects = (this._beatmapKey.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset).ToString();
             this._gameStatus.hideNoteSpawningEffect = playerSettings.hideNoteSpawnEffect;
             // Generate NoteData to id mappings for backwards compatiblity with <1.12.1
             this._noteToIdMapping.Clear();

@@ -15,7 +15,7 @@
     <LocalRefsDir Condition="Exists('..\Refs')">..\Refs</LocalRefsDir>
     <BeatSaberDir>$(LocalRefsDir)</BeatSaberDir>
     <ErrorReport>prompt</ErrorReport>
-    <Version>11.0.0</Version>
+    <Version>12.0.0</Version>
     <WarningLevel>4</WarningLevel>
     <AssemblySearchPaths>$(ReferencePath)</AssemblySearchPaths>
   </PropertyGroup>
@@ -58,6 +58,17 @@
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\BGLib.UnityExtension.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="BGNetCore">
+      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\BGNetCore.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="DataModels">
+      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\DataModels.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <Publicize>True</Publicize>
     </Reference>
     <Reference Include="Hive.Versioning.dll">
       <HintPath>$(BeatSaberDir)\Libs\Hive.Versioning.dll</HintPath>
