@@ -102,8 +102,10 @@ namespace HttpSiraStatus.Enums
         Unknown,
         BPM,
         ColorBoost,
+        FloatFx,
         LightColor,
         LightRotation,
+        LightTranslation,
         SpawnRotation
     }
 }

@@ -156,11 +156,16 @@ namespace HttpSiraStatus.Models
             beatmapJSON["songSubName"] = this.StringOrNull(this._gameStatus.songSubName);
             beatmapJSON["songAuthorName"] = this.StringOrNull(this._gameStatus.songAuthorName);
             beatmapJSON["levelAuthorName"] = this._gameStatus.levelAuthorName;
-            var names = new JSONArray();
+            var mappers = new JSONArray();
             foreach (var name in this._gameStatus.levelAuthorNamesArray) {
-                names.Add(name);
+                mappers.Add(name);
             }
-            beatmapJSON["levelAuthorNamesArray"] = names;
+            beatmapJSON["levelAuthorNamesArray"] = mappers;
+            var lighters = new JSONArray();
+            foreach (var name in this._gameStatus.lighterNamesArray) {
+                lighters.Add(name);
+            }
+            beatmapJSON["lighterNamesArray"] = lighters;
             beatmapJSON["songCover"] = string.IsNullOrEmpty(this._gameStatus.songCover) ? JSONNull.CreateOrGet() : new JSONString(this._gameStatus.songCover);
             beatmapJSON["songHash"] = this.StringOrNull(this._gameStatus.songHash);
             beatmapJSON["levelId"] = this.StringOrNull(this._gameStatus.levelId);

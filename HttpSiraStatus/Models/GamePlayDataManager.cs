@@ -631,6 +631,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.songAuthorName = level.songAuthorName;
             this._gameStatus.levelAuthorName = string.Join(",", level.allMappers);
             this._gameStatus.levelAuthorNamesArray = level.allMappers;
+            this._gameStatus.lighterNamesArray = level.allLighters;
             this._gameStatus.songBPM = level.beatsPerMinute;
             this._gameStatus.noteJumpSpeed = beatmapData.noteJumpMovementSpeed;
             this._gameStatus.noteJumpStartBeatOffset = beatmapData.noteJumpStartBeatOffset;
@@ -773,8 +774,10 @@ namespace HttpSiraStatus.Models
                                         break;
                                     case BPMChangeBeatmapEventData bpm:
                                     case ColorBoostBeatmapEventData color:
+                                    case FloatFxBeatmapEventData floatFx:
                                     case LightColorBeatmapEventData lightColor:
                                     case LightRotationBeatmapEventData lightRotation:
+                                    case LightTranslationBeatmapEventData lightTranslation:
                                     case SpawnRotationBeatmapEventData spawn:
                                     default:
                                         info = new V3BeatmapEventInfomation();
