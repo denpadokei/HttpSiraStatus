@@ -146,6 +146,9 @@ namespace HttpSiraStatus.Models
             this.previousSameTypeEventData = null;
             this.nextSameTypeEventData?.Reset();
             this.nextSameTypeEventData = null;
+            this.Value = 0;
+            this.Translation = 0;
+            this.Distribution = 0;
             this.ApplyValuesToJson(false);
         }
 
