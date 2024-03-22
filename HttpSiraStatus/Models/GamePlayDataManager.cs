@@ -615,7 +615,7 @@ namespace HttpSiraStatus.Models
                 this._levelEndActions.levelFailedEvent += this.OnLevelFailed;
             }
             //var diff = this._gameplayCoreSceneSetupData..difficultyBeatmap;
-            var level = this._gameplayCoreSceneSetupData.beatmapLevel;
+            var level = this._beatmapLevel;
             var beatmapData = level.GetDifficultyBeatmapData(this._beatmapKey.beatmapCharacteristic, this._beatmapKey.difficulty);
 
             this._gameplayModifiers = this._gameplayCoreSceneSetupData.gameplayModifiers;
