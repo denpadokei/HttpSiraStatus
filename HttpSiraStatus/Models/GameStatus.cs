@@ -111,6 +111,7 @@ namespace HttpSiraStatus.Models
             this.songAuthorName = null;
             this.levelAuthorName = null;
             this.levelAuthorNamesArray = Array.Empty<string>();
+            this.lighterNamesArray = Array.Empty<string>();
             this.songCover = null;
             this.songHash = null;
             this.levelId = null;
