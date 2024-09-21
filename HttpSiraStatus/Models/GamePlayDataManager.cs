@@ -381,8 +381,6 @@ namespace HttpSiraStatus.Models
         private NoteDataEntity.Pool _notePool;
         private SliderDataEntity.Pool _sliderPool;
         private GameplayCoreSceneSetupData _gameplayCoreSceneSetupData;
-        private BeatmapLevel _beatmapLevel;
-        private BeatmapKey _beatmapKey;
         private PauseController _pauseController;
         private IScoreController _scoreController;
         private IComboController _comboController;
@@ -452,8 +450,6 @@ namespace HttpSiraStatus.Models
             SliderDataEntity.Pool sliderDataEntityPool,
             CutScoreInfoEntity.Pool cutScoreInfoEntityPool,
             GameplayCoreSceneSetupData gameplayCoreSceneSetupData,
-            BeatmapLevel beatmapLevel,
-            BeatmapKey beatmapKey,
             IScoreController score,
             IComboController comboController,
             GameplayModifiers gameplayModifiers,
@@ -476,8 +472,6 @@ namespace HttpSiraStatus.Models
             this._notePool = noteDataEntityPool;
             this._sliderPool = sliderDataEntityPool;
             this._gameplayCoreSceneSetupData = gameplayCoreSceneSetupData;
-            this._beatmapLevel = beatmapLevel;
-            this._beatmapKey = beatmapKey;
             this._scoreController = score;
             this._gameplayModifiers = gameplayModifiers;
             this._audioTimeSource = audioTimeSource;
@@ -615,8 +609,9 @@ namespace HttpSiraStatus.Models
                 this._levelEndActions.levelFailedEvent += this.OnLevelFailed;
             }
             //var diff = this._gameplayCoreSceneSetupData..difficultyBeatmap;
-            var level = this._beatmapLevel;
-            var beatmapData = level.GetDifficultyBeatmapData(this._beatmapKey.beatmapCharacteristic, this._beatmapKey.difficulty);
+            var beatmapKey = this._gameplayCoreSceneSetupData.beatmapKey;
+            var level = this._gameplayCoreSceneSetupData.beatmapLevel;
+            var beatmapData = level.GetDifficultyBeatmapData(beatmapKey.beatmapCharacteristic, beatmapKey.difficulty);
 
             this._gameplayModifiers = this._gameplayCoreSceneSetupData.gameplayModifiers;
             var playerSettings = this._gameplayCoreSceneSetupData.playerSpecificSettings;
@@ -646,9 +641,9 @@ namespace HttpSiraStatus.Models
             }
 
             this._gameStatus.paused = 0;
-            this._gameStatus.difficulty = this._beatmapKey.difficulty.Name();
-            this._gameStatus.difficultyEnum = Enum.GetName(typeof(BeatmapDifficulty), this._beatmapKey.difficulty);
-            this._gameStatus.characteristic = _beatmapKey.beatmapCharacteristic.serializedName;
+            this._gameStatus.difficulty = beatmapKey.difficulty.Name();
+            this._gameStatus.difficultyEnum = Enum.GetName(typeof(BeatmapDifficulty), beatmapKey.difficulty);
+            this._gameStatus.characteristic = beatmapKey.beatmapCharacteristic.serializedName;
             //var beatmapData = await beatmapData.GetBeatmapDataBasicInfoAsync().ConfigureAwait(true);
             this._gameStatus.notesCount = beatmapData.notesCount;
             this._gameStatus.bombsCount = beatmapData.bombsCount;
@@ -721,7 +716,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.modProMode = this._gameplayModifiers.proMode;
             this._gameStatus.modZenMode = this._gameplayModifiers.zenMode;
 
-            this._gameStatus.staticLights = (this._beatmapKey.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset) != EnvironmentEffectsFilterPreset.AllEffects;
+            this._gameStatus.staticLights = (beatmapKey.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset) != EnvironmentEffectsFilterPreset.AllEffects;
             this._gameStatus.leftHanded = playerSettings.leftHanded;
             this._gameStatus.playerHeight = playerSettings.playerHeight;
             this._gameStatus.sfxVolume = playerSettings.sfxVolume;
@@ -730,7 +725,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.advancedHUD = playerSettings.advancedHud;
             this._gameStatus.autoRestart = playerSettings.autoRestart;
             this._gameStatus.saberTrailIntensity = playerSettings.saberTrailIntensity;
-            this._gameStatus.environmentEffects = (this._beatmapKey.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset).ToString();
+            this._gameStatus.environmentEffects = (beatmapKey.difficulty == BeatmapDifficulty.ExpertPlus ? playerSettings.environmentEffectsFilterExpertPlusPreset : playerSettings.environmentEffectsFilterDefaultPreset).ToString();
             this._gameStatus.hideNoteSpawningEffect = playerSettings.hideNoteSpawnEffect;
             // Generate NoteData to id mappings for backwards compatiblity with <1.12.1
             this._noteToIdMapping.Clear();
