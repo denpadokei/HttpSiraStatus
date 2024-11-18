@@ -591,7 +591,7 @@ namespace HttpSiraStatus.Models
             //this.beatmapObjectCallbackController.beatmapEventDidTriggerEvent += this.OnBeatmapEventDidTrigger;
             this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<BeatmapEventData>(this.OnBeatmapEventDidTrigger));
             this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<ColorBoostBeatmapEventData>(this.OnBeatmapEventDidTrigger));
-            this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<SpawnRotationBeatmapEventData>(this.OnBeatmapEventDidTrigger));
+            //this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<SpawnRotationBeatmapEventData>(this.OnBeatmapEventDidTrigger));
             this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<BasicBeatmapEventData>(this.OnBeatmapEventDidTrigger));
             this._beatmapObjectManager.noteWasSpawnedEvent += this.OnNoteWasSpawnedEvent;
             this._beatmapObjectManager.sliderWasSpawnedEvent += this.OnBeatmapObjectManager_sliderWasSpawnedEvent;
@@ -649,7 +649,7 @@ namespace HttpSiraStatus.Models
             this._gameStatus.bombsCount = beatmapData.bombsCount;
             this._gameStatus.obstaclesCount = beatmapData.obstaclesCount;
             this._gameStatus.environmentName = beatmapData.environmentName.ToString();
-            var colorScheme = this._gameplayCoreSceneSetupData.colorScheme ?? new ColorScheme(this._gameplayCoreSceneSetupData.environmentInfo.colorScheme);
+            var colorScheme = this._gameplayCoreSceneSetupData.colorScheme ?? new ColorScheme(this._gameplayCoreSceneSetupData.originalEnvironmentInfo.colorScheme);
             this._gameStatus.colorSaberA = colorScheme.saberAColor;
             this._gameStatus.colorSaberB = colorScheme.saberBColor;
             this._gameStatus.colorEnvironment0 = colorScheme.environmentColor0;
@@ -666,7 +666,7 @@ namespace HttpSiraStatus.Models
                 // From https://support.unity3d.com/hc/en-us/articles/206486626-How-can-I-get-pixels-from-unreadable-textures-
                 // Modified to correctly handle texture atlases. Fixes #82.
                 var active = RenderTexture.active;
-                var sprite = await level.previewMediaData.GetCoverSpriteAsync(token);
+                var sprite = await level.previewMediaData.GetCoverSpriteAsync();
                 var texture = sprite.texture;
                 var temporary = RenderTexture.GetTemporary(texture.width, texture.height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
 
@@ -773,7 +773,7 @@ namespace HttpSiraStatus.Models
                                     case LightColorBeatmapEventData lightColor:
                                     case LightRotationBeatmapEventData lightRotation:
                                     case LightTranslationBeatmapEventData lightTranslation:
-                                    case SpawnRotationBeatmapEventData spawn:
+                                    //case SpawnRotationBeatmapEventData spawn:
                                     default:
                                         info = new V3BeatmapEventInfomation();
                                         info.Init(beatmapEvent);
