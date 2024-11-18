@@ -110,10 +110,10 @@ namespace HttpSiraStatus.Models
                     this.Translation = lightTranslation.translation;
                     this.Distribution = lightTranslation.distribution;
                     break;
-                case SpawnRotationBeatmapEventData spawn:
-                    this.BeatmapEventType = V3BeatmapEventType.SpawnRotation;
-                    this.Rotation = spawn.rotation;
-                    break;
+                //case SpawnRotationBeatmapEventData spawn:
+                //    this.BeatmapEventType = V3BeatmapEventType.SpawnRotation;
+                //    this.Rotation = spawn.rotation;
+                //    break;
                 case BasicBeatmapEventData basic:
                 default:
                     this.BeatmapEventType = V3BeatmapEventType.Unknown;
