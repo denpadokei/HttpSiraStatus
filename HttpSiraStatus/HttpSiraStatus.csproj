@@ -15,7 +15,7 @@
     <LocalRefsDir Condition="Exists('..\Refs')">..\Refs</LocalRefsDir>
     <BeatSaberDir>$(LocalRefsDir)</BeatSaberDir>
     <ErrorReport>prompt</ErrorReport>
-    <Version>13.0.0</Version>
+    <Version>14.0.0</Version>
     <WarningLevel>4</WarningLevel>
     <AssemblySearchPaths>$(ReferencePath)</AssemblySearchPaths>
   </PropertyGroup>

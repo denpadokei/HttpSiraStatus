@@ -773,6 +773,7 @@ namespace HttpSiraStatus.Models
                                     case LightColorBeatmapEventData lightColor:
                                     case LightRotationBeatmapEventData lightRotation:
                                     case LightTranslationBeatmapEventData lightTranslation:
+                                    case NoteJumpSpeedEventData noteJumpSpeedEventData:
                                     //case SpawnRotationBeatmapEventData spawn:
                                     default:
                                         info = new V3BeatmapEventInfomation();
