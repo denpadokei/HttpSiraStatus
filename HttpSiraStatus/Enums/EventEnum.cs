@@ -106,6 +106,7 @@ namespace HttpSiraStatus.Enums
         LightColor,
         LightRotation,
         LightTranslation,
-        SpawnRotation
+        SpawnRotation,
+        NJS
     }
 }

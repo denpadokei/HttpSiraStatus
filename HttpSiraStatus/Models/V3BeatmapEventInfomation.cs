@@ -54,6 +54,11 @@ namespace HttpSiraStatus.Models
         public float Rotation { get; private set; }
         #endregion
 
+        #region NJS
+        public bool UsePreviousValue { get; private set; }
+        public float RelativeNoteJumpSpeed { get; private set; }
+        #endregion
+
         public void Init(BeatmapEventData eventData, bool isChild)
         {
             if (eventData != null) {
@@ -110,9 +115,10 @@ namespace HttpSiraStatus.Models
                     this.Translation = lightTranslation.translation;
                     this.Distribution = lightTranslation.distribution;
                     break;
-                case SpawnRotationBeatmapEventData spawn:
-                    this.BeatmapEventType = V3BeatmapEventType.SpawnRotation;
-                    this.Rotation = spawn.rotation;
+                case NoteJumpSpeedEventData noteJumpSpeedEventData:
+                    this.EaseType = noteJumpSpeedEventData.easeType;
+                    this.UsePreviousValue = noteJumpSpeedEventData.usePreviousValue;
+                    this.RelativeNoteJumpSpeed = noteJumpSpeedEventData.relativeNoteJumpSpeed;
                     break;
                 case BasicBeatmapEventData basic:
                 default:
@@ -200,6 +206,11 @@ namespace HttpSiraStatus.Models
                     break;
                 case V3BeatmapEventType.SpawnRotation:
                     result["rotation"] = this.Rotation;
+                    break;
+                case V3BeatmapEventType.NJS:
+                    result["easeType"] = this.EaseType.ToString();
+                    result["usePreviousValue"] = this.UsePreviousValue;
+                    result["relativeNoteJumpSpeed"] = this.RelativeNoteJumpSpeed;
                     break;
                 case V3BeatmapEventType.Unknown:
                 default:
