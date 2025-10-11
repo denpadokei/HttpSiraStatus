@@ -64,7 +64,9 @@ namespace HttpSiraStatus.Enums
         [Description("energyChanged")]
         EnergyChanged,
         [Description("softFailed")]
-        SoftFailed
+        SoftFailed,
+        [Description("restart")]
+        Restart
     }
 
     /// <summary>

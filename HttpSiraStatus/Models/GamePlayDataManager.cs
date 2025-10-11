@@ -353,6 +353,11 @@ namespace HttpSiraStatus.Models
             }
         }
 
+        private void OnRestart()
+        {
+            this._statusManager.EmitStatusUpdate(ChangedProperty.Performance, BeatSaberEvent.Restart);
+        }
+
         public void DespawnScoringElement(ScoringElement scoringElement)
         {
             switch (scoringElement) {
@@ -382,6 +387,7 @@ namespace HttpSiraStatus.Models
         private SliderDataEntity.Pool _sliderPool;
         private GameplayCoreSceneSetupData _gameplayCoreSceneSetupData;
         private PauseController _pauseController;
+        private PauseMenuManager _pauseMenuManager;
         private IScoreController _scoreController;
         private IComboController _comboController;
         private GameplayModifiers _gameplayModifiers;
@@ -488,6 +494,7 @@ namespace HttpSiraStatus.Models
             }
             this._pauseController = diContainer.TryResolve<PauseController>();
             this._levelEndActions = diContainer.TryResolve<ILevelEndActions>();
+            this._pauseMenuManager = diContainer.TryResolve<PauseMenuManager>();
             this._multiplayerLocalActivePlayerFacade = diContainer.TryResolve<MultiplayerLocalActivePlayerFacade>();
         }
 
@@ -547,6 +554,9 @@ namespace HttpSiraStatus.Models
                         if (this._relativeScoreAndImmediateRankCounter) {
                             this._relativeScoreAndImmediateRankCounter.relativeScoreOrImmediateRankDidChangeEvent -= this.RelativeScoreAndImmediateRankCounter_relativeScoreOrImmediateRankDidChangeEvent;
                         }
+                        if (this._pauseMenuManager != null) {
+                            this._pauseMenuManager.didPressRestartButtonEvent -= this.OnRestart;
+                        }
                     }
                     catch (Exception e) {
                         Plugin.Logger.Error(e);
@@ -600,6 +610,10 @@ namespace HttpSiraStatus.Models
             // public event Action GameEnergyCounter#gameEnergyDidReach0Event;
             this._gameEnergyCounter.gameEnergyDidReach0Event += this.OnEnergyDidReach0Event;
             this._gameEnergyCounter.gameEnergyDidChangeEvent += this.OnEnergyChanged;
+            
+            if (this._pauseMenuManager != null) {
+                this._pauseMenuManager.didPressRestartButtonEvent += this.OnRestart;
+            }
 
             if (this._multiplayerLocalActivePlayerFacade != null) {
                 this._multiplayerLocalActivePlayerFacade.playerDidFinishEvent += this.OnMultiplayerLevelFinished;
