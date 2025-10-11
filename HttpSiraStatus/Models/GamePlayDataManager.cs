@@ -355,7 +355,7 @@ namespace HttpSiraStatus.Models
 
         private void OnRestart()
         {
-            this._statusManager.EmitStatusUpdate(ChangedProperty.Performance, BeatSaberEvent.Restart);
+            this._statusManager.EmitStatusUpdate(ChangedProperty.Beatmap | ChangedProperty.Performance, BeatSaberEvent.Restart);
         }
 
         public void DespawnScoringElement(ScoringElement scoringElement)
