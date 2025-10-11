@@ -348,7 +348,7 @@ namespace HttpSiraStatus.Models
 
         private void OnBeatmapEventDidTrigger(BeatmapEventData beatmapEventData)
         {
-            if (this._eventToEventInfoMapping?.TryGetValue(beatmapEventData, out var beatmapEvent) == true) {
+            if (this._eventToEventInfoMapping != null && this._eventToEventInfoMapping.TryGetValue(beatmapEventData, out var beatmapEvent) == true) {
                 this._statusManager.BeatmapEventJSON.Enqueue(beatmapEvent);
             }
         }
