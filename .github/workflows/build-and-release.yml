@@ -1,0 +1,171 @@
+name: Build and Release
+
+on:
+  # 手動実行はビルド確認のみ。リリースはタグ push か既定ブランチへの push で作る。
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/build-and-release.yml
+      - 'HttpSiraStatus/**'
+  push:
+    # 既定ブランチへの push では manifest から <ModName>-<version>-bs<GameVersion> タグを作ってリリースする。
+    # タグ push ではそのタグのコミットをビルドして同じタグへ添付する。
+    branches: [master]
+    tags:
+      - 'v*'
+      - '[0-9]*'
+      - '*-bs*'
+    paths:
+      - .github/workflows/build-and-release.yml
+      - 'HttpSiraStatus/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+    outputs:
+      zip-name: ${{ steps.package.outputs.zip-name }}
+      version: ${{ steps.manifest.outputs.version }}
+      game-version: ${{ steps.manifest.outputs.game-version }}
+      tag: ${{ steps.manifest.outputs.tag }}
+      commit: ${{ steps.manifest.outputs.commit }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Read manifest
+        id: manifest
+        shell: pwsh
+        run: |
+          $manifest = Get-Content 'HttpSiraStatus/manifest.json' -Raw | ConvertFrom-Json
+
+          # タグ名は過去のリリースと同じ <ModName>-<version>-bs<GameVersion> に揃える。
+          # 例: HttpSiraStatus-1.2.3-bs1.40.8
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $tag = $env:GITHUB_REF_NAME
+          } else {
+            $tag = '{0}-{1}-bs{2}' -f $manifest.id, $manifest.version, $manifest.gameVersion
+          }
+
+          "version=$($manifest.version)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "game-version=$($manifest.gameVersion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "commit=$($env:GITHUB_SHA)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      # BeatMods から参照アセンブリと依存 MOD を取得する。
+      # このプロジェクトは依存を csproj の DependsOn ではなく manifest.json に持つため、
+      # アクションが読む game-version と additional-dependencies を明示する。
+      # アクションは範囲内で最も低いバージョンを選ぶので、対象の GameVersion に
+      # 対応した最小を指定する (BSIPA 4.3.5 は 1.40.8 非対応、4.3.6 が対応済み)。
+      - name: Set up Beat Saber
+        uses: nicoco007/setup-beat-saber@v1
+        with:
+          project-path: ${{ github.workspace }}\HttpSiraStatus\HttpSiraStatus.csproj
+          game-version: ${{ steps.manifest.outputs.game-version }}
+          additional-dependencies: |
+            {
+              "BSIPA": "^4.3.6",
+              "SiraUtil": "^3.2.0"
+            }
+
+      - name: Build Release
+        shell: pwsh
+        run: |
+          # csproj は ..\Refs があるときだけ BeatSaberDir を使うので、CI では明示的に渡す。
+          dotnet build "${{ github.workspace }}\HttpSiraStatus\HttpSiraStatus.csproj" -c Release `
+            -p:BeatSaberDir="$env:BeatSaberDir" `
+            -p:GameDirectory="$env:BeatSaberDir" `
+            -p:LocalRefsDir="$env:BeatSaberDir" `
+            -p:DisableCopyToPlugins=true
+
+      - name: Package release zip
+        id: package
+        shell: pwsh
+        run: |
+          # CI (GITHUB_ACTIONS) では BSMT が ZipRelease を無効化するため、
+          # BSMT が組み立てた Artifact ディレクトリを自分で zip にする。
+          $manifest = Get-Content 'HttpSiraStatus/manifest.json' -Raw | ConvertFrom-Json
+          $artifact = Get-ChildItem '${{ github.workspace }}\HttpSiraStatus\bin\Release' -Recurse -Directory -Filter Artifact -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+          if (-not $artifact) { throw 'BeatSaberModdingTools did not produce an Artifact directory under bin\Release.' }
+
+          $name = '{0}-{1}-bs{2}' -f $manifest.id, $manifest.version, $manifest.gameVersion
+          $zip = Join-Path $env:RUNNER_TEMP "$name.zip"
+          Compress-Archive -Path (Join-Path $artifact.FullName '*') -DestinationPath $zip -Force
+
+          "zip-path=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "zip-name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Package: $zip"
+          Get-ChildItem $artifact.FullName -Recurse -File | ForEach-Object { Write-Host "  " $_.FullName.Substring($artifact.FullName.Length + 1) }
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.zip-name }}
+          path: ${{ steps.package.outputs.zip-path }}
+          if-no-files-found: error
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: build
+    # 既定ブランチへの push (タグ作成) とタグ push のときだけリリースする。
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    permissions:
+      contents: write
+    steps:
+      - name: Download release zip
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.build.outputs.zip-name }}
+          path: release
+
+      - name: Publish GitHub release
+        shell: bash
+        run: |
+          repo='${{ github.repository }}'
+          tag='${{ needs.build.outputs.tag }}'
+          sha='${{ needs.build.outputs.commit }}'
+          zip="release/${{ needs.build.outputs.zip-name }}.zip"
+          notes="HttpSiraStatus ${{ needs.build.outputs.version }} for Beat Saber ${{ needs.build.outputs.game-version }} (${sha:0:7})."
+
+          if [ ! -f "$zip" ]; then
+            echo "::error::release asset '$zip' not found"; exit 1
+          fi
+
+          version='${{ needs.build.outputs.version }}'
+
+          # セマンティックバージョンのプレリリースは prerelease として作成し、
+          # Latest バッジを通常リリースから奪わないようにする。
+          pre=()
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            pre=(--prerelease --latest=false)
+          fi
+
+          tag_sha=$(gh api "repos/$repo/commits/$tag" --jq .sha 2>/dev/null || true)
+          # gh はタグが無いときにエラー JSON を stdout に出すため、40 桁の SHA 以外は
+          # 「タグが存在しない」として扱う (そうしないと初回リリースが skip される)。
+          if ! [[ "$tag_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            tag_sha=""
+          fi
+          if [ -n "$tag_sha" ] && [ "$tag_sha" != "$sha" ]; then
+            echo "::warning::tag '$tag' points to $tag_sha but this run built $sha; skipping release."
+            exit 0
+          fi
+
+          if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+            gh release edit "$tag" --repo "$repo" --title "$tag" "${pre[@]}"
+          elif [ -n "$tag_sha" ]; then
+            gh release create "$tag" --repo "$repo" --title "$tag" --notes "$notes" --verify-tag "${pre[@]}"
+          else
+            gh release create "$tag" --repo "$repo" --title "$tag" --notes "$notes" --target "$sha" "${pre[@]}"
+          fi
+          gh release upload "$tag" "$zip" --repo "$repo" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
