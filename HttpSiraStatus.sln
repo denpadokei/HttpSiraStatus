@@ -5,6 +5,8 @@ VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpSiraStatus", "HttpSiraStatus\HttpSiraStatus.csproj", "{5B46A99A-6545-41EB-A34A-E1B6EF152201}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpSiraStatus.Tests", "tests\HttpSiraStatus.Tests\HttpSiraStatus.Tests.csproj", "{B1BF3B48-089A-4F51-8C4F-3F55E4A89629}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{5B46A99A-6545-41EB-A34A-E1B6EF152201}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B46A99A-6545-41EB-A34A-E1B6EF152201}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B46A99A-6545-41EB-A34A-E1B6EF152201}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1BF3B48-089A-4F51-8C4F-3F55E4A89629}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1BF3B48-089A-4F51-8C4F-3F55E4A89629}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1BF3B48-089A-4F51-8C4F-3F55E4A89629}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1BF3B48-089A-4F51-8C4F-3F55E4A89629}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,56 @@
+name: Test
+
+# ゲーム非依存の単体テストだけを実行する。
+# 本体のビルドとリリースは build-and-release.yml が担当する。
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/test.yml
+      - HttpSiraStatus.sln
+      - 'HttpSiraStatus/**'
+      - 'tests/**'
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/test.yml
+      - HttpSiraStatus.sln
+      - 'HttpSiraStatus/**'
+      - 'tests/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    # net48 のテストを実行するため Windows ランナーを使う。
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore tests/HttpSiraStatus.Tests/HttpSiraStatus.Tests.csproj
+
+      - name: Test
+        run: >
+          dotnet test tests/HttpSiraStatus.Tests/HttpSiraStatus.Tests.csproj
+          --configuration Release
+          --no-restore
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory "${{ github.workspace }}\TestResults"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: ignore

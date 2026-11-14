@@ -108,6 +108,17 @@ Set `BeatSaberDir` to your Beat Saber install to resolve the game reference asse
 The GitHub Actions workflow `build-and-release.yml` builds on every push and creates a release when an `X.X.X` tag is
 pushed.
 
+## Tests
+
+The unit tests run without a Beat Saber installation. The test project links only the game-independent sources, so
+`BeatSaberDir` does not need to be set.
+
+```powershell
+dotnet test .\tests\HttpSiraStatus.Tests\HttpSiraStatus.Tests.csproj -c Release
+```
+
+The GitHub Actions workflow `test.yml` runs the tests on pull requests and on pushes to `master`.
+
 ## Credits
 
 - Original author: opl ([opl-/beatsaber-http-status](https://github.com/opl-/beatsaber-http-status))

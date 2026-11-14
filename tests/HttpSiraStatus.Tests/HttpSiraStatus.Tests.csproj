@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- 本体はゲームの DLL を参照するため、ゲーム非依存のソースだけをリンクして検証する。 -->
+    <TargetFrameworks>net48;net8.0</TargetFrameworks>
+    <LangVersion>9</LangVersion>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>HttpSiraStatus.Tests</RootNamespace>
+    <AssemblyName>HttpSiraStatus.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\HttpSiraStatus\Util\SimpleJSON.cs" Link="Source\Util\SimpleJSON.cs" />
+    <Compile Include="..\..\HttpSiraStatus\Util\Utility.cs" Link="Source\Util\Utility.cs" />
+    <Compile Include="..\..\HttpSiraStatus\Extentions\QueueExtention.cs" Link="Source\Extentions\QueueExtention.cs" />
+    <Compile Include="..\..\HttpSiraStatus\Enums\EventEnum.cs" Link="Source\Enums\EventEnum.cs" />
+    <Compile Include="..\..\HttpSiraStatus\Models\ObjectMemoryPool.cs" Link="Source\Models\ObjectMemoryPool.cs" />
+    <Compile Include="..\..\HttpSiraStatus\Models\SendEventArgs.cs" Link="Source\Models\SendEventArgs.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
