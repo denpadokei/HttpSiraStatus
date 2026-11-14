@@ -1,64 +1,112 @@
-# Beat Saber HTTP Status
+# HttpSiraStatus
 
-This plugin exposes information about the current game status, live over a WebSocket and over HTTP. It can be used to build [custom stream overlays](https://github.com/opl-/beatsaber-http-status/wiki/Software-using-this-plugin#overlays) or track player performance by third party programs.
+[![Build and Release](https://github.com/denpadokei/HttpSiraStatus/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/denpadokei/HttpSiraStatus/actions/workflows/build-and-release.yml)
 
+現在のゲーム状態 (プレイ中の譜面情報・スコア・ノーツカットなど) を HTTP と WebSocket で外部へ配信する MOD。上流は opl-/beatsaber-http-status。現在はこのフォークで Beat Saber 1.41.1 向けにメンテナンスしている。単体では何も表示せず、配信された情報を読み取る外部ツールと組み合わせて使う。
 
-## Installation
+## 機能
 
-### Recommended (using a mod manager)
+- `GET /status.json` で最新の状態をまるごと JSON で返す
+- WebSocket `/socket` に接続すると `hello` イベントで全状態を送信し、以降は変化のあったイベントだけを逐次配信する
+- ゲーム状態 (`game`)、譜面情報 (`beatmap`)、パフォーマンス (`performance`)、MOD 設定 (`mod`)、プレイヤー設定 (`playerSettings`) を JSON で提供する
+- 譜面イベント (`beatmapEvent`) を V2 / V3 形式で配信する
+- ノーツの出現・カット・取りこぼし・ボム、障害物の進入・退出、スコア変化、曲の開始・終了・失敗・再開・リスタートをイベントとして配信する
+- 送信処理を専用スレッドで行い、ゲーム側のフレームへの影響を抑える
 
-You can install Beat Saber HTTP Status by using [one of the mod installers listed here](https://bsmg.wiki/pc-modding.html). Follow the steps required to run the program of your choice, then in the mods section find "HTTP Status" and install it. This will automatically install and keep everything you need up to date.
+## 動作環境
 
-Next you will need to [get additional software](https://github.com/opl-/beatsaber-http-status/wiki/Software-using-this-plugin) that uses this plugin. **This plugin does nothing useful on its own; it simply exposes information for other programs to use.**
+| 項目 | 内容 |
+| --- | --- |
+| Beat Saber | 1.41.1 |
+| 依存 MOD | BSIPA 4.3.5 以上 / SiraUtil 3.1.12 以上 |
 
-### Manual
+## インストール
 
-1. Install [BSIPA](https://bsmg.github.io/BeatSaber-IPA-Reloaded/) [(BSMG guide)](https://bsmg.wiki/pc-modding.html#manual-installation).
+1. Beat Saber を 1.41.1 に合わせる (BSManager などのバージョン管理ツールを推奨)
+2. BSIPA と上記の依存 MOD をインストールする
+3. [Releases](https://github.com/denpadokei/HttpSiraStatus/releases) から `HttpSiraStatus-15.0.0-bs1.41.1.zip` をダウンロードし、`Plugins` フォルダをゲームフォルダへ上書きコピーする
 
-2. Download the latest release from the [releases page](https://github.com/denpadokei/HttpSiraStatus/releases).
+## 使い方
 
-3. Extract the zip into your Beat Saber directory.
+この MOD は情報を配信するだけで、ゲーム内に UI は無い。ゲーム起動後、同じ PC 上のツールや配信オーバーレイから次のエンドポイントへ接続する。
 
-4. [Get additional software](https://github.com/opl-/beatsaber-http-status/wiki/Software-using-this-plugin) that makes use of this plugin. This mod does nothing on its own; it simply exposes information for other programs to use.
+| 種類 | エンドポイント | 内容 |
+| --- | --- | --- |
+| HTTP | `GET http://localhost:6557/status.json` | 現在の状態を丸ごと返す (`Content-Type: application/json`) |
+| WebSocket | `ws://localhost:6557/socket` | 接続時に `hello` を送り、以降イベントを逐次送信する |
 
+ポートは設定で変更できる。`/status.json` と `/socket` 以外のパスは 404 を返す。
 
-## Developers
+### 送信される JSON
 
-### Using HTTP Status
+イベントは次の形で送られる。`event` はイベント名、`time` はイベント発生時刻の UNIX ミリ秒 (`status` は抜粋)。
 
-Protocol documentation can be found in [protocol.md](protocol.md).
-
-### Contributing to HTTP Status
-
-Before opening a pull request, please read the [contributing guide](CONTRIBUTING.md).
-
-To build this project you will need to create a `BeatSaberHTTPStatus/BeatSaberHTTPStatusPlugin.csproj.user` file specifying where the game is located on your disk:
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <!-- Change this path if necessary. Make sure it ends with a backslash. -->
-    <GameDirPath>C:\Program Files\Steam\steamapps\common\Beat Saber\</GameDirPath>
-  </PropertyGroup>
-</Project>
+```json
+{
+  "event": "songStart",
+  "time": 1700000000000,
+  "status": {
+    "game": {
+      "pluginVersion": "15.0.0",
+      "gameVersion": "1.41.1",
+      "scene": "Song",
+      "mode": "SoloStandard"
+    }
+  }
+}
 ```
 
-Alternatively you can provide the game DLLs in the `libs/beatsaber` directory using the standard Beat Saber directory structure. For a full list see the [project file](HttpSiraStatus/HttpSiraStatus.csproj).
+- `status` はイベントの種類に応じて全体、または変更された部分 (`game` / `beatmap` / `performance` / `mod` / `playerSettings`) のみが入る
+- ノーツ関連のイベントは `status.performance` に加えて `noteCut` を含む
+- 譜面イベントは `beatmapEvent` を含む
+- WebSocket 接続直後の `hello` は `status` に全体、`other` に追加情報 (現在は空オブジェクト) を含む
 
-The following properties can be specified either in the `.csproj.user` file or through the command line (`/p:<name>=<value>`):
+`status` の主なキーは次のとおり。
 
-- `GameDirPath`: Path ending with a backslash pointing to the Beat Saber directory. Used to locate required game DLLs.
+| オブジェクト | 主なキー |
+| --- | --- |
+| `game` | `pluginVersion`, `gameVersion`, `scene` (`Menu` / `Song` / `Spectator`), `mode` |
+| `beatmap` | `songName`, `songSubName`, `songAuthorName`, `levelAuthorName`, `levelAuthorNamesArray`, `lighterNamesArray`, `songCover`, `songHash`, `levelId`, `songBPM`, `noteJumpSpeed`, `noteJumpStartBeatOffset`, `songTimeOffset`, `start`, `paused`, `length`, `difficulty`, `difficultyEnum`, `characteristic`, `notesCount`, `bombsCount`, `obstaclesCount`, `maxScore`, `maxRank`, `environmentName`, `color` |
+| `beatmap.color` | `saberA`, `saberB`, `environment0`, `environment1`, `environmentW`, `environment0Boost`, `environment1Boost`, `environmentWBoost`, `obstacle` |
+| `performance` | `rawScore`, `score`, `currentMaxScore`, `relativeScore`, `rank`, `passedNotes`, `hitNotes`, `missedNotes`, `lastNoteScore`, `passedBombs`, `hitBombs`, `combo`, `maxCombo`, `multiplier`, `multiplierProgress`, `batteryEnergy`, `energy`, `softFailed`, `currentSongTime` |
+| `mod` | `multiplier`, `obstacles`, `instaFail`, `noFail`, `batteryEnergy`, `batteryLives`, `disappearingArrows`, `noBombs`, `songSpeed`, `songSpeedMultiplier`, `noArrows`, `ghostNotes`, `failOnSaberClash`, `strictAngles`, `fastNotes`, `smallNotes`, `proMode`, `zenMode` |
+| `playerSettings` | `staticLights`, `leftHanded`, `playerHeight`, `sfxVolume`, `reduceDebris`, `noHUD`, `advancedHUD`, `autoRestart`, `saberTrailIntensity`, `environmentEffects`, `hideNoteSpawningEffect` |
 
-- `OutputZip` = `true`/`false`: Enable/disable generating the .zip file. Can be used to get a zip for the `Debug` configuration.
+### イベント一覧
 
-- `CopyToPlugins` = `true`/`false`: Enable/disable copying of HTTP Status DLLs to the Beat Saber installation. Depends on `GameDirPath`.
+`menu`, `songStart`, `pause`, `resume`, `restart`, `finished`, `failed`, `softFailed`, `scoreChanged`, `energyChanged`, `noteSpawned`, `noteCut`, `noteFullyCut`, `noteMissed`, `bombCut`, `bombMissed`, `obstacleEnter`, `obstacleExit`, `beatmapEvent`, `other`
 
+より詳細な仕様は [protocol.md](protocol.md) を参照。
 
-## Credits
+## 設定
 
-**xyonico** for the [Beat Saber Discord Presence](https://github.com/xyonico/BeatSaberDiscordPresence) plugin, on which this plugin was initially based.
+`UserData/HttpSiraStatus.json` で変更する。ゲーム内に設定画面は無い。
 
-**sta** for the [websocket-sharp](https://github.com/sta/websocket-sharp) library.
+| 項目 | 型 | 既定値 | 説明 |
+| --- | --- | --- | --- |
+| Port | int | 6557 | HTTP / WebSocket サーバーが待ち受けるポート番号 |
+| SendBeatmapEvents | bool | true | 譜面イベント (`beatmapEvent`) を配信する |
+| AsyncSetupMapInformation | bool | true | ノーツ ID と譜面イベントのマッピング構築をバックグラウンドで行い、`songStart` を先に送る (`SendBeatmapEvents` が true のときのみ有効) |
 
-**Maxaxik** for testing and helping with research.
+## ビルド
+
+```powershell
+git clone https://github.com/denpadokei/HttpSiraStatus.git
+cd HttpSiraStatus
+dotnet build .\HttpSiraStatus\HttpSiraStatus.csproj -c Release
+```
+
+`BeatSaberDir` に Beat Saber のインストール先を設定すると、ゲームの参照アセンブリを解決できます。
+
+GitHub Actions の `build-and-release.yml` が push ごとにビルドし、`X.X.X` 形式のタグを push するとリリースを作成します。
+
+## クレジット
+
+- オリジナル作者: opl ([opl-/beatsaber-http-status](https://github.com/opl-/beatsaber-http-status))
+- xyonico: [Beat Saber Discord Presence](https://github.com/xyonico/BeatSaberDiscordPresence) (このプラグインの元になった実装)
+- sta: [websocket-sharp](https://github.com/sta/websocket-sharp)
+- Maxaxik: テストと調査への協力
+
+## ライセンス
+
+MIT License (Copyright (c) 2018-2019 opl)。詳細は [LICENSE](LICENSE) を参照。
