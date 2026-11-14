@@ -1,6 +1,10 @@
 # Beat Saber HTTP Status protocol
 
-This document describes the protocol used by the Beat Saber HTTP Status plugin.
+This document describes the protocol implemented by HttpSiraStatus, the fork of
+[opl-/beatsaber-http-status](https://github.com/opl-/beatsaber-http-status) maintained for Beat Saber 1.41.1.
+
+Everything below was checked against the code in this repository. If a consumer relies on the upstream document, note the
+fork-specific fields marked **fork**.
 
 ## Index
 
@@ -8,249 +12,257 @@ This document describes the protocol used by the Beat Saber HTTP Status plugin.
 1. [Endpoints](#endpoints)
 1. [Standard objects](#standard-objects)
 1. [Events](#events)
-
+1. [Configuration](#configuration)
 
 ## Connecting
 
-The web server by default runs on port `6557` (**B**eat **S**aber **ST**atus). Secure connections are currently not supported.
+The server listens on port `6557` by default (**B**eat **S**aber **ST**atus). Change it with `Port` in
+`UserData/HttpSiraStatus.json`. Secure connections are not supported.
 
 ## Endpoints
 
 ### `GET /status.json`
 
-Returns the [Status object](#status-object).
+Returns the [Status object](#status-object) as `application/json` (UTF-8, status code `200`). The response has no
+`event`, `time` or `other` wrapper.
 
 ### `/socket`
 
-Use this path to connect to the WebSocket. The WebSocket will send the [hello event](#hello-event) when connected and new [events](#events) as they happen.
+Connect here for the WebSocket. On connect the server sends the [`hello` event](#hello-event), then sends
+[events](#events) as they happen. Any other HTTP path returns `404`.
 
 ## Standard objects
 
 ### Event object
 
-* EventObject
+Every WebSocket message has this shape.
+
 ```js
 {
 	"event": String, // See [Events](#events)
-	"time": Integer, // UNIX timestamp in milliseconds of the moment this event happened
-	"status": Object, // See [Status object](#status-object). May be partial, depending on the event type.
+	"time": Integer, // UNIX timestamp in milliseconds of the moment the message was sent
+	"status": Object, // See [Status object](#status-object). May be partial or absent, depending on the event type.
+	"beatmapEvent": Object, // See [Beatmap event object](#beatmap-event-object). Only on beatmap event messages.
+	"noteCut": Object, // See [Note cut object](#note-cut-object). Only on note-related messages.
+	"other": Object, // Additional data. Currently always an empty object, and only sent with `hello`.
 }
 ```
 
+`time` is added by the WebSocket layer, so it is not present in `/status.json`.
+
 ### Status object
 
-* StatusObject
 ```js
 {
 	"game": {
 		"pluginVersion": String, // Currently running version of the plugin
-		"gameVersion": String, // Version of the game the current plugin version is targetting
-		"scene": "Menu" | "Song" | "Spectator", // Indicates player's current activity
-		"mode": null | "Solo<beatmap.characteristic>" | "Party<beatmap.characteristic>" | "Multiplayer<beatmap.characteristic>", // Composed of game mode and map characteristic. The value is composed for backwards compability. For characteristic, use `beatmap.characteristic` instead. For game mode, compare beginning of string to a constant, or get a substring using length of `beatmap.characteristic`.
+		"gameVersion": String, // Version of the game the current plugin version targets
+		"scene": "Menu" | "Song", // Current activity. This build does not report a spectator scene.
+		"mode": String, // Game mode header followed by the characteristic serialized name, e.g. "SoloStandard", "PartyNoArrows", "MultiplayerStandard". The header is one of "Solo", "Party", "Multiplayer" or "Unknown".
 	},
 	"beatmap": null | {
-		"songName": String, // Song name
-		"songSubName": String, // Song sub name
-		"songAuthorName": String, // Song author name
-		"levelAuthorName": String, // Beatmap author name
-		"levelAuthorNamesArray": String[], // Beatmap author names
-		"lighterNamesArray": String[], // Beatmap lighter names
-		"songCover": null | String, // Base64 encoded PNG image of the song cover
-		"songHash": String, // Unique beatmap identifier. Same for all difficulties. Is extracted from the levelId and will return null for OST and WIP songs.
-		"levelId": String, // Raw levelId for a song. Same for all difficulties.
-		"songBPM": Number, // Song Beats Per Minute
-		"noteJumpSpeed": Number, // Song note jump movement speed, determines how fast the notes move towards the player.
-		"noteJumpStartBeatOffset": Number, // Offset in beats for the Half Jump Duration, tweaks how far away notes spawn from the player.
-		"songTimeOffset": Integer, // Time in milliseconds of where in the song the beatmap starts. Adjusted for song speed multiplier.
-		"start": null | Integer, // UNIX timestamp in milliseconds of when the map was started. Changes if the game is resumed. Might be altered by practice settings.
-		"paused": null | Integer, // If game is paused, UNIX timestamp in milliseconds of when the map was paused. null otherwise.
-		"length": Integer, // Length of map in milliseconds. Adjusted for song speed multiplier.
-		"difficulty": String, // Translated beatmap difficulty name. If SongCore is installed, this may contain a custom difficulty label defined by the beatmap.
-		"difficultyEnum": "Easy" | "Normal" | "Hard" | "Expert" | "ExpertPlus", // Beatmap difficulty
-		"characteristic": "Standard" | "NoArrows" | "OneSaber" | "360Degree" | "90Degree" | "Lightshow" | "Lawless" | String, // Characteristic of the set this beatmap belongs to. See https://bsmg.wiki/mapping/map-format.html#beatmapcharacteristicname for a current list of characteristics.
-		"notesCount": Integer, // Map cube count
-		"bombsCount": Integer, // Map bomb count. Set even with No Bombs modifier enabled.
-		"obstaclesCount": Integer, // Map obstacle count. Set even with No Obstacles modifier enabled.
-		"maxScore": Integer, // Max score obtainable on the map with the current modifier multiplier
-		"maxRank": "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E", // Max rank obtainable using current modifiers
-		"environmentName": String, // Name of the environment this beatmap requested. See https://bsmg.wiki/mapping/basic-lighting.html#environment-previews for a current list of environments.
-		"color": { // Contains colors used by this environment. If overrides were set by the player, they replace the values provided by the environment. SongCore may override the colors based on beatmap settings, including player overrides. Each color is stored as an array of three integers in the range [0..255] representing the red, green, and blue values in order.
-			"saberA": [Integer, Integer, Integer], // Color of the left saber and its notes
-			"saberB": [Integer, Integer, Integer], // Color of the right saber and its notes
-			"environment0": [Integer, Integer, Integer], // First environment color
-			"environment1": [Integer, Integer, Integer], // Second environment color
-			"environment0Boost": null | [Integer, Integer, Integer], // First environment boost color. If a boost color isn't set, this property will be `null`, and the value of `environment0` should be used instead.
-			"environment1Boost": null | [Integer, Integer, Integer], // Second environment boost color. If a boost color isn't set, this property will be `null`, and the value of `environment1` should be used instead.
-			"obstacle": [Integer, Integer, Integer], // Color of obstacles
+		"songName": String,
+		"songSubName": String,
+		"songAuthorName": String,
+		"levelAuthorName": String, // All mappers joined with ","
+		"levelAuthorNamesArray": String[], // **fork** Mapper names as an array
+		"lighterNamesArray": String[], // **fork** Lighter names as an array
+		"songCover": null | String, // Base64 encoded PNG of the song cover
+		"songHash": null | String, // SHA-1 hash of a custom level. null for OST and WIP levels.
+		"levelId": String, // Raw levelId
+		"songBPM": Number,
+		"noteJumpSpeed": Number,
+		"noteJumpStartBeatOffset": Number,
+		"songTimeOffset": Integer, // Milliseconds into the audio where the beatmap starts, adjusted for the song speed multiplier
+		"start": null | Integer, // UNIX timestamp in milliseconds of when the map started. Changes on resume and is shifted by the practice start time. null before the map starts.
+		"paused": null | Integer, // UNIX timestamp in milliseconds of the pause, null while playing
+		"length": Integer, // Map length in milliseconds, adjusted for the song speed multiplier
+		"difficulty": String, // Translated difficulty name
+		"difficultyEnum": "Easy" | "Normal" | "Hard" | "Expert" | "ExpertPlus",
+		"characteristic": String, // Characteristic serialized name, e.g. "Standard", "NoArrows", "OneSaber", "360Degree", "90Degree", "Lightshow", "Lawless"
+		"notesCount": Integer, // Cube count, even with No Arrows or a modded map
+		"bombsCount": Integer, // Bomb count, even with No Bombs
+		"obstaclesCount": Integer, // Obstacle count, even with No Obstacles
+		"maxScore": Integer, // Max score achievable with the current modifier multiplier
+		"maxRank": "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E", // Max rank achievable with the current modifiers
+		"environmentName": String,
+		"color": { // Every entry is [red, green, blue] in [0..255], or null when the environment does not provide it
+			"saberA": [Integer, Integer, Integer], // Left saber and its notes
+			"saberB": [Integer, Integer, Integer], // Right saber and its notes
+			"environment0": [Integer, Integer, Integer],
+			"environment1": [Integer, Integer, Integer],
+			"environmentW": null | [Integer, Integer, Integer], // **fork** Environment white color
+			"environment0Boost": null | [Integer, Integer, Integer], // null when the scheme has no boost colors; use environment0 instead
+			"environment1Boost": null | [Integer, Integer, Integer], // null when the scheme has no boost colors; use environment1 instead
+			"environmentWBoost": null | [Integer, Integer, Integer], // **fork** Boost white color
+			"obstacle": [Integer, Integer, Integer],
 		},
 	},
 	"performance": null | {
-		"rawScore": Integer, // Current score without the modifier multiplier
-		"score": Integer, // Current score with modifier multiplier
-		"currentMaxScore": Integer, // Maximum score with modifier multiplier achievable at current passed notes
-		"rank": "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E", // Current rank
-		"relativeScore": Float // 精度
-		"passedNotes": Integer, // Amount of hit or missed cubes
-		"hitNotes": Integer, // Amount of hit cubes
-		"missedNotes": Integer, // Amount of missed cubes
-		"passedBombs": Integer, // Amount of hit or missed bombs
-		"hitBombs": Integer, // Amount of hit bombs
-		"combo": Integer, // Current combo
-		"maxCombo": Integer, // Max obtained combo
-		"multiplier": Integer, // Current combo multiplier {1, 2, 4, 8}
-		"multiplierProgress": Number, // Current combo multiplier progress [0..1)
-		"batteryEnergy": null | Integer, // Current amount of battery lives left. null if Battery Energy and Insta Fail are disabled.
-		"currentSongTime": Integer // 現在の曲の秒数です。1秒おきに更新されます。
-		"softFailed": Boolean, // Set to `true` when the player's energy reaches 0, but they can continue playing. See the `softFailed` event.
+		"rawScore": Integer, // Score without the modifier multiplier
+		"score": Integer, // Score with the modifier multiplier
+		"currentMaxScore": Integer, // Max score with the modifier multiplier achievable at the current note count
+		"relativeScore": Number, // Accuracy in [0..1]
+		"rank": "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E",
+		"passedNotes": Integer, // Hit or missed cubes
+		"hitNotes": Integer,
+		"missedNotes": Integer,
+		"lastNoteScore": Integer, // **fork** Score of the most recent fully cut note, updated right before `noteFullyCut`
+		"passedBombs": Integer, // Hit or missed bombs
+		"hitBombs": Integer,
+		"combo": Integer,
+		"maxCombo": Integer,
+		"multiplier": Integer, // Current combo multiplier, one of 1, 2, 4, 8
+		"multiplierProgress": Number, // Progress towards the next multiplier in [0..1)
+		"batteryEnergy": null | Integer, // Remaining battery lives. null unless Battery Energy or Insta Fail is enabled.
+		"energy": Number, // **fork** Current energy in [0..1]
+		"softFailed": Boolean, // true after the energy reached 0 with No Fail enabled
+		"currentSongTime": Integer, // Seconds since the map started. Refreshed about once per second.
 	},
 	"mod": {
-		"multiplier": Number, // Current score multiplier for gameplay modifiers
-		"obstacles": false | "FullHeightOnly" | "All", // No Walls (FullHeightOnly is not possible from UI, formerly "No Obstacles")
-		"instaFail": Boolean, // 1 Life (formerly "Insta Fail")
-		"noFail": Boolean, // No Fail
-		"batteryEnergy": Boolean, // 4 Lives (formerly "Battery Energy")
-		"batteryLives": null | Integer, // Amount of battery energy available. 4 with Battery Energy, 1 with Insta Fail, null with neither enabled.
-		"disappearingArrows": Boolean, // Disappearing Arrows
-		"noBombs": Boolean, // No Bombs
-		"songSpeed": "Normal" | "Slower" | "Faster" | "SuperFast", // Song Speed (Slower = 85%, Faster = 120%, SuperFast = 150%)
-		"songSpeedMultiplier": Number, // Song speed multiplier. Might be altered by practice settings.
-		"noArrows": Boolean, // No Arrows
-		"ghostNotes": Boolean, // Ghost Notes
-		"failOnSaberClash": Boolean, // Fail on Saber Clash (Hidden)
-		"strictAngles": Boolean, // Strict Angles (Requires more precise cut direction; changes max deviation from 60deg to 15deg)
-		"fastNotes": Boolean, // Does something (Hidden)
-		"smallNotes": Boolean, // Small Notes
-		"proMode": Boolean, // Pro Mode
-		"zenMode": Boolean, // Zen Mode
+		"multiplier": Number, // Score multiplier from the gameplay modifiers
+		"obstacles": false | "FullHeightOnly" | "All", // No Walls. false when obstacles are disabled.
+		"instaFail": Boolean, // 1 Life
+		"noFail": Boolean,
+		"batteryEnergy": Boolean, // 4 Lives
+		"batteryLives": null | Integer, // 4 with Battery Energy, 1 with Insta Fail, null with neither
+		"disappearingArrows": Boolean,
+		"noBombs": Boolean,
+		"songSpeed": String, // "Normal", "Slower", "Faster" or "SuperFast"
+		"songSpeedMultiplier": Number, // May be overridden by practice settings
+		"noArrows": Boolean,
+		"ghostNotes": Boolean,
+		"failOnSaberClash": Boolean, // Hidden modifier
+		"strictAngles": Boolean,
+		"fastNotes": Boolean, // Hidden modifier
+		"smallNotes": Boolean,
+		"proMode": Boolean,
+		"zenMode": Boolean,
 	},
 	"playerSettings": {
-		"staticLights": Boolean, // `true` if `environmentEffects` is not `AllEffects`. (formerly "Static lights", backwards compat)
-		"leftHanded": Boolean, // Left handed
-		"playerHeight": Number, // Player's height
-		"sfxVolume": Number, // Disable sound effects [0..1]
-		"reduceDebris": Boolean, // Reduce debris
-		"noHUD": Boolean, // No text and HUDs
-		"advancedHUD": Boolean, // Advanced HUD
-		"autoRestart" : Boolean, // Auto Restart on Fail
-		"saberTrailIntensity": Number, // Trail Intensity [0..1]
-		"environmentEffects": "AllEffects" | "StrobeFilter" | "NoEffects", // Environment effects
-		"hideNoteSpawningEffect": Boolean, // Hide note spawning effect
+		"staticLights": Boolean, // true when environmentEffects is not "AllEffects"
+		"leftHanded": Boolean,
+		"playerHeight": Number,
+		"sfxVolume": Number, // [0..1]
+		"reduceDebris": Boolean,
+		"noHUD": Boolean,
+		"advancedHUD": Boolean,
+		"autoRestart": Boolean,
+		"saberTrailIntensity": Number, // [0..1]
+		"environmentEffects": "AllEffects" | "StrobeFilter" | "NoEffects",
+		"hideNoteSpawningEffect": Boolean,
 	},
 }
 ```
 
+`beatmap` and `performance` are `null` while the menu is active or before a map starts.
+
 ### Note cut object
 
-Each note cut has a **cut plane**, which is a plane defined by three points of the cutting saber:
+Each note cut has a **cut plane** defined by three points of the cutting saber:
 
 - its top on the frame the collision happened,
 - its bottom on the frame the collision happened,
 - its center on the frame previous to the collision frame.
 
-In **note space**, positive X, positive Y, and positive Z represent right, up, and forward respectively. The arrow of a directional note is always located at positive Y and pointing towards negative Y. The space origin is the center of the note.
+In **note space**, positive X, positive Y and positive Z point right, up and forward. The arrow of a directional note sits at
+positive Y and points towards negative Y. The origin is the center of the note.
 
-* NoteCutObject
 ```js
- {
-	"noteID": Integer, // ID of the note
-	"noteType": "NoteA" | "NoteB" | "Bomb", // Type of note
-	"noteCutDirection": "Up" | "Down" | "Left" | "Right" | "UpLeft" | "UpRight" | "DownLeft" | "DownRight" | "Any" | "None", // Direction the note is supposed to be cut in
-	"noteLine": Integer, // The horizontal position of the note, from left to right [0..3]
-	"noteLayer": Integer, // The vertical position of the note, from bottom to top [0..2]
-	"speedOK": Boolean, // Cut speed was fast enough
-	"directionOK": null | Boolean, // Note was cut in the correct direction. null for bombs.
-	"saberTypeOK": null | Boolean, // Note was cut with the correct saber. null for bombs.
-	"wasCutTooSoon": Boolean, // Note was cut too early
-	"initialScore": null | Integer, // Score without multipliers for the cut. It contains the prehit swing score and the cutDistanceScore, but doesn't include the score for swinging after cut. [0..85] null for bombs.
-	"finalScore": null | Integer, // Score without multipliers for the entire cut, including score for swinging after cut. [0..115] Available in [`noteFullyCut` event](#notefullycut-event). null for bombs.
-	"cutDistanceScore": null | Integer, // Score for how close the cut plane was to the note center. [0..15]
-	"multiplier": Integer, // Combo multiplier at the time of cut
-	"saberSpeed": Number, // Speed of the saber when the note was cut
-	"saberDir": [ // Direction in note space that the saber was moving in on the collision frame, calculated by subtracting the position of the saber's tip on the previous frame from its current position (current - previous).
-		Number, // X value
-		Number, // Y value
-		Number, // Z value
-	],
-	"saberType": "SaberA" | "SaberB", // Saber used to cut this note
-	"swingRating": Number, // Game's swing rating. Uses the before cut rating in noteCut events and after cut rating for noteFullyCut events. -1 for bombs.
-	"timeDeviation": Number, // Time offset in seconds from the perfect time to cut the note
-	"cutDirectionDeviation": Number, // Offset from the perfect cut angle in degrees
-	"cutPoint": [ // Position in note space of the point on the cut plane closests to the note center
-		Number, // X value
-		Number, // Y value
-		Number, // Z value
-	],
-	"cutNormal": [ // Normalized vector describing the normal of the cut plane in note space. Points towards negative X on a correct cut of a directional note.
-		Number, // X value
-		Number, // Y value
-		Number, // Z value
-	],
-	"cutDistanceToCenter": Number, // Distance from the center of the note to the cut plane
-	"timeToNextBasicNote": Number, // Time until next note in seconds
+{
+	"noteID": Integer, // ID assigned by the plugin while walking the map
+	"noteType": "NoteA" | "NoteB" | "Bomb",
+	"noteCutDirection": String, // "Up", "Down", "Left", "Right", "UpLeft", "UpRight", "DownLeft", "DownRight", "Any", "None"
+	"sliderHeadCutDirection": null | String, // **fork** Cut direction of a slider head
+	"sliderTailCutDirection": null | String, // **fork** Cut direction of a slider tail
+	"noteLine": Integer, // Horizontal position, left to right [0..3]
+	"noteLayer": Integer, // Vertical position, bottom to top [0..2]
+	"sliderHeadLine": Integer, // **fork**
+	"sliderHeadLayer": Integer, // **fork**
+	"sliderTailLine": Integer, // **fork**
+	"sliderTailLayer": Integer, // **fork**
+	"speedOK": Boolean, // Saber speed was enough
+	"directionOK": null | Boolean, // Cut direction was correct. null for bombs.
+	"saberTypeOK": null | Boolean, // Correct saber was used. null for bombs.
+	"wasCutTooSoon": Boolean,
+	"initialScore": null | Integer, // Score for the cut so far without multipliers. null when not applicable or for bombs.
+	"finalScore": null | Integer, // Full cut score without multipliers, set on `noteFullyCut`
+	"cutDistanceScore": null | Integer, // Score for the distance between the cut plane and the note center [0..15]
+	"swingRating": Number, // Before-cut rating on `noteCut`, after-cut rating on `noteFullyCut`. -1 when no swing data is available, such as on missed notes and bombs.
+	"beforeSwingRating": Number, // **fork** Raw before-cut swing rating
+	"afterSwingRating": Number, // **fork** Raw after-cut swing rating
+	"beforeCutScore": Number, // **fork** Score from the before-cut swing
+	"afterCutScore": Number, // **fork** Score from the after-cut swing
+	"multiplier": Integer, // Combo multiplier at the time of the cut
+	"saberSpeed": Number,
+	"saberDir": [Number, Number, Number], // Saber movement in note space on the collision frame (current - previous tip position)
+	"saberType": null | "SaberA" | "SaberB",
+	"timeDeviation": Number, // Seconds from the perfect cut time
+	"cutDirectionDeviation": Number, // Degrees from the perfect cut angle
+	"cutPoint": [Number, Number, Number], // Point on the cut plane closest to the note center, in note space
+	"cutNormal": [Number, Number, Number], // Normal of the cut plane in note space
+	"cutDistanceToCenter": Number, // Distance from the note center to the cut plane
+	"timeToNextBasicNote": Number, // Seconds until the next colored note
+	"gameplayType": String, // **fork** NoteData gameplay type
 }
 ```
+
+`noteSpawned` fills only the note data fields; cut and swing fields keep their defaults. For bombs `directionOK`,
+`saberTypeOK`, `initialScore`, `finalScore` and `cutDistanceScore` are `null`. The default values for the numeric fields are
+`-1` for the score values and `0` for the rest.
 
 ### Beatmap event object
 
-An explanation of the beatmap events system can be found here: <https://bsmg.wiki/mapping/basic-lighting.html>
+Background on the beatmap event system: <https://bsmg.wiki/mapping/basic-lighting.html>
 
-Meanings of the different integer values can be derived from here: <https://github.com/Caeden117/ChroMapper/blob/master/Assets/__Scripts/Map/Events/MapEvent.cs>
+V2 events (version `2.6.0`):
 
-
-* V2 BeatmapEvent
 ```js
 {
+	"version": "2.6.0",
+	"time": Number, // Beat time
+	"executionOrder": Integer,
+	"type": Integer,
 	"value": Integer,
 	"floatValue": Number,
-	"version": String, // "2.6.0" only
-	"executionOrder": Integer,
-	"time": Number,
-	"type": Interger,
-	"previousSameTypeEventData": {
-		"time": Number,
-		"executionOrder": Integer,
-		"value": Integer,
-		"version": String,
-		"type": Integer,
-		"floatValue": Number
-	},
-	"nextSameTypeEventData": {
-		"time": Number,
-		"executionOrder": Integer,
-		"value": Integer,
-		"version": String,
-		"type": Integer,
-		"floatValue": Number
-	}
+	"previousSameTypeEventData": null | Object, // Same shape without previous/next
+	"nextSameTypeEventData": null | Object,
 }
 ```
 
+V3 events (version `3.0.0`):
 
-* V3 BeatmapEvent
 ```js
 {
-	"version": String, // "3.0.0" only
-	"boostColorsAreOn": Boolean,
+	"version": "3.0.0",
+	"type": Integer, // See V3BeatmapEventType below
+	"time": Number, // Beat time
 	"executionOrder": Integer,
-	"time": Number,
-	"type": Integer,
-	"previousSameTypeEventData": {
-		"time": Number,
-		"executionOrder": Integer,
-		"version": String,
-		"type": Integer
-	},
-	"nextSameTypeEventData": {
-		"time": Number,
-		"executionOrder": Integer,
-		"version": String,
-		"boostColorsAreOn": Boolean,
-		"type": Integer
-	}
+	// Type-specific fields, see the table below
+	"previousSameTypeEventData": null | Object, // Same shape without previous/next
+	"nextSameTypeEventData": null | Object,
 }
 ```
-V3 EventmapType values
-``` csharp
+
+Type-specific fields by `type`:
+
+| Type | Name | Fields |
+| --- | --- | --- |
+| 1 | BPM | `bpm` |
+| 2 | ColorBoost | `boostColorsAreOn` |
+| 3 | FloatFx | `value`, `easeType` |
+| 4 | LightColor | `groupId`, `elementId`, `transitionType`, `colorType`, `brightness`, `strobeBeatFrequency` |
+| 5 | LightRotation | `groupId`, `elementId`, `usePreviousEventValue`, `easeType`, `axis`, `loopCount`, `rotationDirection`, `rotation` |
+| 6 | LightTranslation | `groupId`, `elementId`, `usePreviousEventValue`, `easeType`, `axis`, `translation`, `distribution` |
+| 7 | SpawnRotation | `rotation` |
+| 8 | NJS | `easeType`, `usePreviousValue`, `relativeNoteJumpSpeed` |
+
+Enum values are sent as strings (`"Instant"`, `"X"`, `"Color0"`, and so on), and `type` is sent as an integer. For
+`LightTranslation`, `translation` and `distribution` are also sent as strings.
+
+`V3BeatmapEventType`:
+
+```csharp
 public enum V3BeatmapEventType
 {
     Unknown = 0,
@@ -260,132 +272,107 @@ public enum V3BeatmapEventType
     LightColor = 4,
     LightRotation = 5,
     LightTranslation = 6,
-    SpawnRotation = 7
+    SpawnRotation = 7,
+    NJS = 8, // **fork**
 }
 ```
 
 ## Events
 
-Events are broadcasted over the WebSocket. For message format, see [Event object](#event-object).
+Events are sent over the WebSocket. See [Event object](#event-object) for the envelope.
 
 ### `hello` event
 
-Sent when the client connects to the WebSocket server.
-
-Contains the full [Status object](#status-object).
+Sent when a client connects. Contains the full Status object and the `other` object (currently `{}`).
 
 ### `songStart` event
 
-Fired when the `GameCore` scene is activated. In case of multiplayer, this is delayed until the countdown starts.
+Fired when the map starts, after the map metadata has been read. Contains the full Status object.
 
-If the player is spectating at the beginning of the song, `game.scene` will be set to `Spectator` and only beatmap events will be fired.
-
-If the player fails the map but other players are still alive, the `failed` event will be fired and the `menu` event will be delayed until after the map is over.
-
-Contains the full [Status object](#status-object).
-
-### `finished` event
-
-Fired when the player finishes a beatmap.
-
-Contains only the `performance` property of [Status object](#status-object).
-
-### `softFailed` event
-
-Fired when the player's energy counter reaches 0 but the player can continue playing (for example if the No Fail modifier is on).
-
-After this event is fired, the `performance.softFailed` property of the [Status object](#status-object) will be set to `true` until the end of the map. Any properties that are affected by the modifier multiplier will also be updated accordingly (such as `mod.multiplier`, `beatmap.maxRank`, and `performance.currentMaxScore`, among others).
-
-When the player completes the map after this event was fired, the `finished` event will be used to signal that.
-
-Contains the `beatmap`, `performance` and `mod` properties of [Status object](#status-object).
-
-### `failed` event
-
-Fired when the player fails a beatmap.
-
-Contains only the `performance` property of [Status object](#status-object).
+With `AsyncSetupMapInformation` enabled the event is sent before the plugin finishes indexing note IDs and beatmap events, so
+early `noteSpawned` messages may arrive before the mapping is ready.
 
 ### `menu` event
 
-Fired when the `Menu` scene is activated. In case of multiplayer, this happens whenever the room enters the lobby.
+Fired when the gameplay scene is torn down, that is when the player returns to the menu. The map and performance values
+have already been reset, so `beatmap` and `performance` are `null`. Contains the full Status object.
 
-Contains the full [Status object](#status-object).
+### `pause` / `resume` events
 
-### `pause` event
+Fired when the map is paused or resumed. Both contain only the `beatmap` property. `beatmap.paused` holds the pause
+timestamp, and `beatmap.start` is recalculated on resume.
 
-Fired when the beatmap is paused.
+### `restart` event
 
-Contains only the `beatmap` property of [Status object](#status-object).
+Fired when the player restarts the map. Contains the `beatmap` and `performance` properties.
 
-### `resume` event
+### `finished` / `failed` events
 
-Fired when the beatmap is resumed.
+Fired when the map is finished or failed. Both contain only the `performance` property.
 
-Contains only the `beatmap` property of [Status object](#status-object).
+### `softFailed` event
 
-### `noteSpawned` event
+Fired when energy reaches 0 while No Fail is enabled. Contains the `beatmap`, `performance` and `mod` properties, because
+the modifier multiplier and the affected scores change at that moment. `performance.softFailed` stays `true` until the end
+of the map.
 
-Fired when a note is spawned.
+### `energyChanged` event
 
-Contains only the `noteCut` property as described in [Note cut object](#note-cut-object). Only the properties describing the note data will be set, leaving the cut and swing related properties at their default values.
-
-### `noteCut` event
-
-Fired when a note is correctly cut.
-
-Contains only the `performance` property of [Status object](#status-object) and a `noteCut` property as described in [Note cut object](#note-cut-object).
-
-See also: [`noteFullyCut` event](#notefullycut-event).
-
-### `noteFullyCut` event
-
-Fired when the `AfterCutScoreBuffer` finishes, ie. the game finishes gathering data to calculate the cut exit score. The field `performance.lastNoteScore` is updated right before this event is fired. This event is not fired for bomb notes.
-
-Contains only the `performance` property of [Status object](#status-object) and a `noteCut` property as described in [Note cut object](#note-cut-object).
-
-### `noteMissed` event
-
-Fired when a note is either not cut or cut incorrectly. See [`bombMissed` event](#bombmissed-event) for bomb notes.
-
-Contains only the `performance` property of [Status object](#status-object).
-
-Contains the `noteCut` property with an object value as described in [Note cut object](#note-cut-object). Only the properties describing the note data will be set, leaving the cut and swing related properties at their default values.
-
-### `bombCut` event
-
-Fired when a bomb is cut.
-
-Contains only the `performance` property of [Status object](#status-object) and a `noteCut` property as described in [Note cut object](#note-cut-object).
-
-### `bombMissed` event
-
-Fired when a bomb is passed.
-
-Contains only the `performance` property of [Status object](#status-object).
-
-Contains the `noteCut` property with an object value as described in [Note cut object](#note-cut-object). Only the properties describing the note data will be set, leaving the cut and swing related properties at their default values.
-
-### `obstacleEnter` event
-
-Fired when the player enters an obstacle.
-
-Contains only the `performance` property of [Status object](#status-object).
-
-### `obstacleExit` event
-
-Fired when the player exits an obstacle.
-
-Contains only the `performance` property of [Status object](#status-object).
+Fired whenever the energy value changes. Contains only the `performance` property.
 
 ### `scoreChanged` event
 
-Fired when the score changes.
+Fired when the score, combo or multiplier changes. Contains only the `performance` property.
 
-Contains only the `performance` property of [Status object](#status-object).
+### `obstacleEnter` / `obstacleExit` events
+
+Fired when the player's head enters or leaves an obstacle. Both contain only the `performance` property.
+
+### `noteSpawned` event
+
+Fired when a note or slider is spawned. Contains only the `noteCut` object, with the note data fields filled and the cut
+fields at their defaults. No `status` is included.
+
+### `noteCut` event
+
+Fired when a note is cut. Contains the `performance` property and the `noteCut` object.
+
+### `noteFullyCut` event
+
+Fired when the after-cut score buffer finishes, which is when the full cut score is known. `performance.lastNoteScore` is
+updated right before this event. Contains the `performance` property and the `noteCut` object. Not fired for bombs.
+
+### `noteMissed` event
+
+Fired when a note is missed or cut incorrectly. Contains the `performance` property and the `noteCut` object with the note
+data only.
+
+### `bombCut` event
+
+Fired when a bomb is hit. Contains the `performance` property and the `noteCut` object.
+
+### `bombMissed` event
+
+Declared in the event enum for compatibility but not emitted by this build.
 
 ### `beatmapEvent` event
 
-Fired when a beatmap event is triggered. Beatmap events include changing light colors, light rotation speed and moving the square rings.
+Real beatmap events are sent with only the `beatmapEvent` property (no `status`), one message per triggered event.
 
-Contains only a `beatmapEvent` property as described in [Beatmap event object](#beatmap-event-object).
+The plugin also reuses the `beatmapEvent` name once per second to publish the song timer: those messages have
+`status.performance` with an updated `currentSongTime` and no `beatmapEvent` property. A consumer that only cares about
+light and ring events should ignore messages without a `beatmapEvent` field.
+
+### `other` event
+
+Reserved for plugin-specific data. The `other` object is currently always empty and no event of this name is emitted.
+
+## Configuration
+
+`UserData/HttpSiraStatus.json` (written by BSIPA on first run):
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `Port` | int | 6557 | Port used by the HTTP and WebSocket server |
+| `SendBeatmapEvents` | bool | true | Send `beatmapEvent` messages |
+| `AsyncSetupMapInformation` | bool | true | Build the note ID and beatmap event mapping in the background and send `songStart` first. Only meaningful while `SendBeatmapEvents` is enabled. |
