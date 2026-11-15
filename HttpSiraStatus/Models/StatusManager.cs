@@ -19,20 +19,26 @@ namespace HttpSiraStatus.Models
             this._gameStatus = gameStatus;
             this.JsonPool = new ObjectMemoryPool<JSONObject>(null, r => { r.Clear(); }, 20);
             this.UpdateAll();
-            this._thread = new Thread(new ThreadStart(this.RaiseSendEvent));
+            this._thread = new Thread(new ThreadStart(this.RaiseSendEvent))
+            {
+                IsBackground = true,
+                Name = "HttpSiraStatus.Send",
+            };
             this._thread.Start();
             this._cutScorePool = cutScorePool;
         }
         public JSONObject StatusJSON { get; } = new JSONObject();
-        public Queue<IBeatmapEventInformation> BeatmapEventJSON { get; } = new Queue<IBeatmapEventInformation>();
         public JSONObject OtherJSON { get; } = new JSONObject();
         public ObjectMemoryPool<JSONObject> JsonPool { get; }
-        public ConcurrentQueue<JSONObject> JsonQueue { get; } = new ConcurrentQueue<JSONObject>();
         public Queue<(CutScoreInfoEntity entity, BeatSaberEvent e)> CutScoreInfoQueue { get; } = new Queue<(CutScoreInfoEntity entity, BeatSaberEvent e)>();
 
         public event SendEventHandler SendEvent;
+        private readonly BlockingCollection<SendItem> _sendQueue = new BlockingCollection<SendItem>(new ConcurrentQueue<SendItem>(), 2048);
+        private readonly BeatmapEventJsonWriter _beatmapEventWriter = new BeatmapEventJsonWriter();
         private readonly Thread _thread;
-        private bool _disposedValue;
+        private volatile bool _disposedValue;
+        private long _droppedMessages;
+        private long _droppedBeatmapEvents;
         private readonly GameStatus _gameStatus;
         private readonly CutScoreInfoEntity.Pool _cutScorePool;
 
@@ -92,23 +98,85 @@ namespace HttpSiraStatus.Models
             if ((changedProps & ChangedProperty.Other) != 0) {
                 eventJSON["other"] = this.OtherJSON;
             }
-            this.JsonQueue.Enqueue(eventJSON);
+
+            eventJSON["time"].AsLong = Utility.GetCurrentTime();
+            _ = this.TryEnqueue(SendItem.ForMessage(eventJSON));
         }
 
         private void RaiseSendEvent()
         {
-            while (!this._disposedValue) {
-                try {
-                    while (this.JsonQueue.TryDequeue(out var json)) {
-                        this.SendEvent?.Invoke(this, new SendEventArgs(json));
-                        this.JsonPool.Despawn(json);
+            try {
+                foreach (var item in this._sendQueue.GetConsumingEnumerable()) {
+                    try {
+                        var json = item.Kind == SendKind.BeatmapEvent
+                            ? this._beatmapEventWriter.Write(item.BeatmapEvent, Utility.GetCurrentTime())
+                            : item.Message.ToString();
+
+                        var handlers = this.SendEvent;
+                        if (handlers != null) {
+                            var args = new SendEventArgs(json);
+                            foreach (var handler in handlers.GetInvocationList()) {
+                                try {
+                                    ((SendEventHandler)handler)(this, args);
+                                }
+                                catch (Exception e) {
+                                    Plugin.Logger.Error(e);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception e) {
+                        Plugin.Logger.Error(e);
+                    }
+                    finally {
+                        if (item.Kind == SendKind.Message) {
+                            this.JsonPool.Despawn(item.Message);
+                        }
                     }
                 }
-                catch (Exception e) {
-                    Plugin.Logger.Error(e);
-                }
-                Thread.Sleep(1);
             }
+            catch (ObjectDisposedException) {
+            }
+            catch (InvalidOperationException) {
+            }
+        }
+
+        private bool TryEnqueue(SendItem item)
+        {
+            if (this._disposedValue) {
+                if (item.Kind == SendKind.Message) {
+                    this.JsonPool.Despawn(item.Message);
+                }
+                return false;
+            }
+
+            try {
+                if (this._sendQueue.TryAdd(item)) {
+                    return true;
+                }
+            }
+            catch (ObjectDisposedException) {
+                // Dispose() won the race with this enqueue.
+            }
+            catch (InvalidOperationException) {
+                // CompleteAdding() won the race with Dispose().
+            }
+
+            if (item.Kind == SendKind.Message) {
+                var dropped = Interlocked.Increment(ref this._droppedMessages);
+                this.JsonPool.Despawn(item.Message);
+                if (dropped == 1 || dropped % 1000 == 0) {
+                    Plugin.Logger.Warn($"Send queue is full. Dropped {dropped} messages.");
+                }
+            }
+            else {
+                var dropped = Interlocked.Increment(ref this._droppedBeatmapEvents);
+                if (dropped == 1 || dropped % 1000 == 0) {
+                    Plugin.Logger.Warn($"Send queue is full. Dropped {dropped} beatmap events.");
+                }
+            }
+
+            return false;
         }
 
         private void UpdateAll()
@@ -311,21 +379,40 @@ namespace HttpSiraStatus.Models
         {
             if (!this._disposedValue) {
                 this._disposedValue = true;
+
+                if (disposing) {
+                    try {
+                        this._sendQueue.CompleteAdding();
+                    }
+                    catch (ObjectDisposedException) {
+                    }
+
+                    if (this._thread.IsAlive) {
+                        _ = this._thread.Join(1000);
+                    }
+
+                    while (this._sendQueue.TryTake(out var item)) {
+                        if (item.Kind == SendKind.Message) {
+                            this.JsonPool.Despawn(item.Message);
+                        }
+                    }
+
+                    this._sendQueue.Dispose();
+                }
             }
         }
         public void Dispose()
         {
-            // Ç±ÇÃÉRÅ[ÉhÇïœçXÇµÇ»Ç¢Ç≈Ç≠ÇæÇ≥Ç¢ÅBÉNÉäÅ[ÉìÉAÉbÉv ÉRÅ[ÉhÇ 'Dispose(bool disposing)' ÉÅÉ\ÉbÉhÇ…ãLèqÇµÇ‹Ç∑
+            // „Åì„ÅÆ„Ç≥„Éº„Éâ„ÇíÂ§âÊõ¥„Åó„Å™„ÅÑ„Åß„Åè„Å†„Åï„ÅÑ„ÄÇ„ÇØ„É™„Éº„É≥„Ç¢„ÉÉ„Éó „Ç≥„Éº„Éâ„Çí 'Dispose(bool disposing)' „É°„ÇΩ„ÉÉ„Éâ„Å´Ë®òËø∞„Åó„Åæ„Åô
             this.Dispose(disposing: true);
         }
 
         /// <summary>
-        /// UpdateÇ›ÇΩÇ¢Ç»Ç‡ÇÃÉÅÉCÉìÉXÉåÉbÉhÇ≈åƒÇŒÇÍÇÈ
+        /// Update„Åø„Åü„ÅÑ„Å™„ÇÇ„ÅÆ„É°„Ç§„É≥„Çπ„É¨„ÉÉ„Éâ„ÅßÂëº„Å∞„Çå„Çã
         /// </summary>
         public void Tick()
         {
             this.EnqueueCutInfo();
-            this.EnqueueBeatmapEvent();
         }
 
         private void EnqueueCutInfo()
@@ -339,19 +426,15 @@ namespace HttpSiraStatus.Models
                     status["performance"] = this.StatusJSON["performance"];
                     eventJSON["status"] = status;
                 }
-                this.JsonQueue.Enqueue(eventJSON);
+                eventJSON["time"].AsLong = Utility.GetCurrentTime();
+                _ = this.TryEnqueue(SendItem.ForMessage(eventJSON));
                 this._cutScorePool.Despawn(cutScoreInfo.entity);
             }
         }
 
-        private void EnqueueBeatmapEvent()
+        public bool EnqueueBeatmapEvent(BeatmapEventPayload payload)
         {
-            while (this.BeatmapEventJSON.TryDequeue(out var beatmapEventInformation)) {
-                var eventJSON = this.JsonPool.Spawn();
-                eventJSON["event"] = BeatSaberEvent.BeatmapEvent.GetDescription();
-                eventJSON["beatmapEvent"] = beatmapEventInformation.SilializedJson;
-                this.JsonQueue.Enqueue(eventJSON);
-            }
+            return this.TryEnqueue(SendItem.ForBeatmapEvent(payload));
         }
     }
 }

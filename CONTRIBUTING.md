@@ -6,4 +6,4 @@ Before opening a pull request please make sure that:
 
 - You're using tabs for indentation.
 
-- You did not change the plugin version, as those are only changed in release commits. Changing the BeatSaber version is fine if that's the purpose of your PR.
+- You did not change the plugin version, as those are only changed in release commits. Plugin versions, game versions and dependencies are defined in `versions.json`. Changing the BeatSaber version is fine if that's the purpose of your PR.

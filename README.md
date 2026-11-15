@@ -4,8 +4,8 @@
 
 A Beat Saber mod that publishes the current game state (beatmap details, score, note cuts and so on) over HTTP and
 WebSocket. Upstream is [opl-/beatsaber-http-status](https://github.com/opl-/beatsaber-http-status); this fork is currently
-maintained for Beat Saber 1.41.1. The mod shows nothing in game — it is meant to be read by external tools and stream
-overlays.
+maintained for Beat Saber 1.40.8 and 1.44.1. The mod shows nothing in game — it is meant to be read by external tools and
+stream overlays.
 
 ## Features
 
@@ -20,14 +20,21 @@ overlays.
 
 | Item | Details |
 | --- | --- |
-| Beat Saber | 1.41.1 |
-| Dependencies | BSIPA 4.3.5 or later / SiraUtil 3.1.12 or later |
+| Beat Saber | 1.40.8 or 1.44.1 |
+| Dependencies (1.40.8) | BSIPA 4.3.5 or later / SiraUtil 3.1.12 or later |
+| Dependencies (1.44.1) | BSIPA 4.3.6 or later / SiraUtil 3.2.0 or later |
 
 ## Installation
 
-1. Set Beat Saber to 1.41.1 (a version manager such as BSManager is recommended)
-2. Install BSIPA and the dependencies listed above
-3. Download `HttpSiraStatus-15.0.0-bs1.41.1.zip` from [Releases](https://github.com/denpadokei/HttpSiraStatus/releases) and copy its `Plugins` folder over the game folder
+1. Set Beat Saber to 1.40.8 or 1.44.1 (a version manager such as BSManager is recommended)
+2. Install BSIPA and the dependencies for that game version
+3. Download the matching zip from [Releases](https://github.com/denpadokei/HttpSiraStatus/releases) and copy its
+   `Plugins` folder over the game folder:
+
+| Beat Saber | Release |
+| --- | --- |
+| 1.40.8 | `HttpSiraStatus-14.2.0-bs1.40.8.zip` |
+| 1.44.1 | `HttpSiraStatus-16.0.0-bs1.44.1.zip` |
 
 ## Usage
 
@@ -51,8 +58,8 @@ Every WebSocket message has an `event` name, a `time` in UNIX milliseconds, and 
   "time": 1700000000000,
   "status": {
     "game": {
-      "pluginVersion": "15.0.0",
-      "gameVersion": "1.41.1",
+      "pluginVersion": "16.0.0",
+      "gameVersion": "1.44.1",
       "scene": "Song",
       "mode": "SoloStandard"
     }
@@ -92,21 +99,34 @@ Edit `UserData/HttpSiraStatus.json`. There is no in-game settings screen.
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `Port` | int | 6557 | Port the HTTP and WebSocket server listens on |
-| `SendBeatmapEvents` | bool | true | Publish `beatmapEvent` messages |
-| `AsyncSetupMapInformation` | bool | true | Build the note ID and beatmap event mapping in the background and send `songStart` first. Only meaningful while `SendBeatmapEvents` is enabled. |
+| `SendBeatmapEvents` | bool | true | Publish `beatmapEvent` messages. Event JSON is built when an event fires, so enabling this does not add load time. |
 
 ## Build
+
+`versions.json` is the single source of truth for the supported game versions. It maps each game version to the plugin
+version and its BSIPA/SiraUtil dependencies:
+
+| Beat Saber | Plugin version | Release tag |
+| --- | --- | --- |
+| 1.40.8 | 14.2.0 | `14.2.0` |
+| 1.44.1 | 16.0.0 | `16.0.0` |
+
+Use the helper to prepare the selected manifest and build against the matching game installation:
 
 ```powershell
 git clone https://github.com/denpadokei/HttpSiraStatus.git
 cd HttpSiraStatus
-dotnet build .\HttpSiraStatus\HttpSiraStatus.csproj -c Release
+
+.\build.ps1 -GameVersion 1.40.8 -BeatSaberDir "C:\Path\To\1.40.8"
+.\build.ps1 -GameVersion 1.44.1 -BeatSaberDir "C:\Path\To\1.44.1"
 ```
 
-Set `BeatSaberDir` to your Beat Saber install to resolve the game reference assemblies.
+The helper temporarily writes the selected manifest, builds with the matching `Version`, and restores the manifest
+afterwards. `scripts\prepare-manifest.ps1` can be used on its own when you need a manifest-only update.
 
-The GitHub Actions workflow `build-and-release.yml` builds on every push and creates a release when an `X.X.X` tag is
-pushed.
+The GitHub Actions workflow `build-and-release.yml` builds both versions on every push and pull request. A release is
+created only by pushing a tag that matches a `mod_version` in `versions.json`; the tag for 1.40.8 is `14.2.0` and the
+tag for 1.44.1 is `16.0.0`. The release name is `HttpSiraStatus-<mod_version>-bs<game_version>`.
 
 ## Tests
 

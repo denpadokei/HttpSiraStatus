@@ -1,0 +1,17 @@
+{
+  "versions": [
+    {
+      "game_version": "1.40.8",
+      "mod_version": "14.2.0",
+      "bsipa": "^4.3.5",
+      "sirautil": "^3.1.12"
+    },
+    {
+      "game_version": "1.44.1",
+      "mod_version": "16.0.0",
+      "bsipa": "^4.3.6",
+      "sirautil": "^3.2.0"
+    }
+  ]
+}
+
