@@ -1,13 +1,16 @@
-﻿using HttpSiraStatus.Util;
-
-namespace HttpSiraStatus.Models
+﻿namespace HttpSiraStatus.Models
 {
     public class SendEventArgs
     {
-        public JSONNode JsonNode { get; private set; }
-        public SendEventArgs(JSONNode node)
+        /// <summary>
+        /// Serialized message. It is produced once by the send thread and
+        /// shared by every WebSocket session.
+        /// </summary>
+        public string Json { get; }
+
+        public SendEventArgs(string json)
         {
-            this.JsonNode = node;
+            this.Json = json;
         }
     }
 

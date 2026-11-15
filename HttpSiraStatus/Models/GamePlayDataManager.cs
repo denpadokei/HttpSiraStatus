@@ -10,7 +10,6 @@ using SiraUtil.Zenject;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -348,8 +347,16 @@ namespace HttpSiraStatus.Models
 
         private void OnBeatmapEventDidTrigger(BeatmapEventData beatmapEventData)
         {
-            if (this._eventToEventInfoMapping?.TryGetValue(beatmapEventData, out var beatmapEvent) == true) {
-                this._statusManager.BeatmapEventJSON.Enqueue(beatmapEvent);
+            if (!this._config.SendBeatmapEvents) {
+                return;
+            }
+
+            try {
+                var payload = BeatmapEventCapture.Capture(beatmapEventData);
+                _ = this._statusManager.EnqueueBeatmapEvent(payload);
+            }
+            catch (Exception e) {
+                Plugin.Logger.Error(e);
             }
         }
 
@@ -403,7 +410,7 @@ namespace HttpSiraStatus.Models
         private bool _headInObstacle = false;
         private int _lastNoteId = 0;
         private bool _disposedValue;
-        private BeatmapDataCallbackWrapper _eventDataCallbackWrapper;
+        private readonly List<BeatmapDataCallbackWrapper> _eventDataCallbackWrappers = new List<BeatmapDataCallbackWrapper>();
         private IReadonlyBeatmapData _beatmapData;
         //private List<GameplayModifierParamsSO> _gameplayModifierParams;
         private readonly List<ScoringElement> _sortedScoringElementsWithoutMultiplier = new List<ScoringElement>(50);
@@ -417,7 +424,6 @@ namespace HttpSiraStatus.Models
         /// Before 1.12.1 the noteID matched the note order in the beatmap file, but this is impossible to replicate now without hooking into the level loading code.
         /// </summary>
         private readonly ConcurrentDictionary<IBeatmapObjectEntity, int> _noteToIdMapping = new ConcurrentDictionary<IBeatmapObjectEntity, int>();
-        private ReadOnlyDictionary<BeatmapEventData, IBeatmapEventInformation> _eventToEventInfoMapping;
         private PluginConfig _config;
         #endregion
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*
@@ -513,8 +519,6 @@ namespace HttpSiraStatus.Models
                         // Clear note id mappings.
                         this._noteToIdMapping?.Clear();
 
-                        this._eventToEventInfoMapping = null;
-
                         this._statusManager?.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.Menu);
 
                         if (this._pauseController != null) {
@@ -540,7 +544,12 @@ namespace HttpSiraStatus.Models
                             this._levelEndActions.levelFailedEvent -= this.OnLevelFailed;
                         }
 
-                        this._beatmapObjectCallbackController?.RemoveBeatmapCallback(this._eventDataCallbackWrapper);
+                        if (this._beatmapObjectCallbackController != null) {
+                            foreach (var wrapper in this._eventDataCallbackWrappers) {
+                                this._beatmapObjectCallbackController.RemoveBeatmapCallback(wrapper);
+                            }
+                            this._eventDataCallbackWrappers.Clear();
+                        }
 
                         if (this._beatmapObjectManager != null) {
                             this._beatmapObjectManager.noteWasSpawnedEvent -= this.OnNoteWasSpawnedEvent;
@@ -599,10 +608,10 @@ namespace HttpSiraStatus.Models
             this._scoreController.multiplierDidChangeEvent += this.OnMultiplierDidChange;
             // public event Action<BeatmapEventData> BeatmapObjectCallbackController#beatmapEventDidTriggerEvent
             //this.beatmapObjectCallbackController.beatmapEventDidTriggerEvent += this.OnBeatmapEventDidTrigger;
-            this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<BeatmapEventData>(this.OnBeatmapEventDidTrigger));
-            this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<ColorBoostBeatmapEventData>(this.OnBeatmapEventDidTrigger));
-            //this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<SpawnRotationBeatmapEventData>(this.OnBeatmapEventDidTrigger));
-            this._eventDataCallbackWrapper = this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<BasicBeatmapEventData>(this.OnBeatmapEventDidTrigger));
+            this._eventDataCallbackWrappers.Add(this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<BeatmapEventData>(this.OnBeatmapEventDidTrigger)));
+            this._eventDataCallbackWrappers.Add(this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<ColorBoostBeatmapEventData>(this.OnBeatmapEventDidTrigger)));
+            //this._eventDataCallbackWrappers.Add(this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<SpawnRotationBeatmapEventData>(this.OnBeatmapEventDidTrigger)));
+            this._eventDataCallbackWrappers.Add(this._beatmapObjectCallbackController.AddBeatmapCallback(new BeatmapDataCallback<BasicBeatmapEventData>(this.OnBeatmapEventDidTrigger)));
             this._beatmapObjectManager.noteWasSpawnedEvent += this.OnNoteWasSpawnedEvent;
             this._beatmapObjectManager.sliderWasSpawnedEvent += this.OnBeatmapObjectManager_sliderWasSpawnedEvent;
 
@@ -744,18 +753,31 @@ namespace HttpSiraStatus.Models
             // Generate NoteData to id mappings for backwards compatiblity with <1.12.1
             this._noteToIdMapping.Clear();
             this._lastNoteId = 0;
-            void __SetupMapping()
+            void SetupNoteIdMapping()
             {
-                var eventDic = new Dictionary<BeatmapEventData, IBeatmapEventInformation>();
                 var noteIDcount = 0;
-                foreach (var note in this._beatmapData.allBeatmapDataItems.OrderBy(x => x.time)) {
+                var notes = new List<BeatmapDataItem>();
+
+                foreach (var item in this._beatmapData.allBeatmapDataItems) {
                     if (token.IsCancellationRequested) {
                         break;
                     }
+
+                    if (item is NoteData || item is SliderData) {
+                        notes.Add(item);
+                    }
+                }
+
+                notes = notes.OrderBy(x => x.time).ToList();
+
+                foreach (var note in notes) {
+                    if (token.IsCancellationRequested) {
+                        break;
+                    }
+
                     switch (note) {
                         case NoteData noteData:
                             if (this._noteToIdMapping.TryAdd(new NoteDataEntity(noteData, this._gameplayModifiers.noArrows), noteIDcount)) {
-                                
                                 noteIDcount++;
                             }
                             else {
@@ -772,45 +794,12 @@ namespace HttpSiraStatus.Models
                                 Plugin.Logger.Warn($"{note}");
                             }
                             break;
-                        default:
-                            if (this._config.SendBeatmapEvents && note is BeatmapEventData beatmapEvent) {
-                                IBeatmapEventInformation info;
-                                switch (beatmapEvent) {
-                                    case BasicBeatmapEventData basic:
-                                        // V2 map
-                                        info = new V2BeatmapEventInfomation();
-                                        info.Init(basic);
-                                        break;
-                                    case BPMChangeBeatmapEventData bpm:
-                                    case ColorBoostBeatmapEventData color:
-                                    case FloatFxBeatmapEventData floatFx:
-                                    case LightColorBeatmapEventData lightColor:
-                                    case LightRotationBeatmapEventData lightRotation:
-                                    case LightTranslationBeatmapEventData lightTranslation:
-                                    case NoteJumpSpeedEventData noteJumpSpeedEventData:
-                                    //case SpawnRotationBeatmapEventData spawn:
-                                    default:
-                                        info = new V3BeatmapEventInfomation();
-                                        info.Init(beatmapEvent);
-                                        break;
-                                }
-                                if (!eventDic.ContainsKey(beatmapEvent)) {
-                                    eventDic.Add(beatmapEvent, info);
-                                }
-                            }
-                            break;
                     }
                 }
-                this._eventToEventInfoMapping = new(eventDic);
             }
-            if (this._config.SendBeatmapEvents && this._config.AsyncSetupMapInformation) {
-                this._statusManager.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.SongStart);
-                _ = Task.Run(__SetupMapping).ConfigureAwait(false);
-            }
-            else {
-                __SetupMapping();
-                this._statusManager.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.SongStart);
-            }
+
+            SetupNoteIdMapping();
+            this._statusManager.EmitStatusUpdate(ChangedProperty.AllButNoteCut, BeatSaberEvent.SongStart);
         }
         #endregion
         //ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*ﾟ+｡｡+ﾟ*｡+ﾟ ﾟ+｡*

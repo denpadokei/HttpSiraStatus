@@ -14,6 +14,8 @@
     <Compile Include="..\..\HttpSiraStatus\Enums\EventEnum.cs" Link="Source\Enums\EventEnum.cs" />
     <Compile Include="..\..\HttpSiraStatus\Models\ObjectMemoryPool.cs" Link="Source\Models\ObjectMemoryPool.cs" />
     <Compile Include="..\..\HttpSiraStatus\Models\SendEventArgs.cs" Link="Source\Models\SendEventArgs.cs" />
+    <Compile Include="..\..\HttpSiraStatus\Models\BeatmapEventPayload.cs" Link="Source\Models\BeatmapEventPayload.cs" />
+    <Compile Include="..\..\HttpSiraStatus\Models\BeatmapEventJsonWriter.cs" Link="Source\Models\BeatmapEventJsonWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />

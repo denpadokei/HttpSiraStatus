@@ -1,7 +1,7 @@
 # Beat Saber HTTP Status protocol
 
 This document describes the protocol implemented by HttpSiraStatus, the fork of
-[opl-/beatsaber-http-status](https://github.com/opl-/beatsaber-http-status) maintained for Beat Saber 1.41.1.
+[opl-/beatsaber-http-status](https://github.com/opl-/beatsaber-http-status) maintained for Beat Saber 1.40.8 and 1.44.1.
 
 Everything below was checked against the code in this repository. If a consumer relies on the upstream document, note the
 fork-specific fields marked **fork**.
@@ -257,8 +257,11 @@ Type-specific fields by `type`:
 | 7 | SpawnRotation | `rotation` |
 | 8 | NJS | `easeType`, `usePreviousValue`, `relativeNoteJumpSpeed` |
 
-Enum values are sent as strings (`"Instant"`, `"X"`, `"Color0"`, and so on), and `type` is sent as an integer. For
-`LightTranslation`, `translation` and `distribution` are also sent as strings.
+Enum values are sent as strings (`"Instant"`, `"X"`, `"Color0"`, and so on), and `type` is sent as an integer. Numeric
+fields are JSON numbers; in particular `translation` and `distribution` on `LightTranslation` are numbers, not strings.
+
+`transitionType` on `LightColor` is currently always `"Instant"`: the supported game versions do not expose the value in
+`LightColorBeatmapEventData`.
 
 `V3BeatmapEventType`:
 
@@ -289,8 +292,8 @@ Sent when a client connects. Contains the full Status object and the `other` obj
 
 Fired when the map starts, after the map metadata has been read. Contains the full Status object.
 
-With `AsyncSetupMapInformation` enabled the event is sent before the plugin finishes indexing note IDs and beatmap events, so
-early `noteSpawned` messages may arrive before the mapping is ready.
+The note-ID map is built before `songStart`, so `noteSpawned` messages have a valid `noteID` from the first note. Beatmap
+event JSON is generated when each event fires, so a map with many lighting events does not add to the load time.
 
 ### `menu` event
 
@@ -374,5 +377,4 @@ Reserved for plugin-specific data. The `other` object is currently always empty 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `Port` | int | 6557 | Port used by the HTTP and WebSocket server |
-| `SendBeatmapEvents` | bool | true | Send `beatmapEvent` messages |
-| `AsyncSetupMapInformation` | bool | true | Build the note ID and beatmap event mapping in the background and send `songStart` first. Only meaningful while `SendBeatmapEvents` is enabled. |
+| `SendBeatmapEvents` | bool | true | Send `beatmapEvent` messages. JSON is generated when an event fires, so this does not add load time. |
